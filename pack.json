@@ -1,11 +1,11 @@
 {
  "format": 1,
- "version": 4,
+ "version": 5,
  "name": "1.2",
  "minApi": 1,
- "notes": "Tapping a button no longer moves the page, on every screen.",
- "id": "5cd5df13",
- "built": "21 Nov 2026 18:19",
+ "notes": "Nothing you can see: test files are no longer sent to the phone.",
+ "id": "870586d3",
+ "built": "21 Nov 2026 18:36",
  "files": {
   "app.css": {
    "sha256": "7d02c06e75456e392daae3c1dcc8c3e3b32b2daccc4f5238198527c9279e01ec",
@@ -52,8 +52,8 @@
    "size": 2992
   },
   "data/changelog.md": {
-   "sha256": "18c884ff87680f8334df2724f2690e5d36e1cd4515b2978694ea3cce8569c8b2",
-   "size": 8753
+   "sha256": "4b6b76ea5534fef7b731906aae276b45a9454dbfb5d03c6b373b0c7d830be7f6",
+   "size": 9009
   },
   "index.html": {
    "sha256": "f7fe318eb75e146ab18e7bbc262d05dd4011ed4434c107578bea911b5d6f2d23",
@@ -94,14 +94,6 @@
   "js/ui.js": {
    "sha256": "1a05c3faf83d17f31c200570b71845b5ea371b0b09ac2523e07f540a8148dbeb",
    "size": 10796
-  },
-  "tests/tests.html": {
-   "sha256": "961c569397f009f59cdf36d8a0c2d272920f13472503b3066028b0508f07f7fb",
-   "size": 247
-  },
-  "tests/tests.js": {
-   "sha256": "550e1d5b2d643ee605d5e1887bac6e00d0550abde7bfbe0c13a4f76c806e9140",
-   "size": 15749
   }
  }
 }

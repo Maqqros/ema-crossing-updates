@@ -6,6 +6,10 @@ What changed in each version of EMA Crossing, newest first. In the app: Settings
 
 Finished 21 November 2026. Everything from 1.1 below is in it.
 
+Pack 5, 21 November 2026 (arrived on its own, nothing to install)
+
+- Nothing you can see. The app's test files are no longer sent to the phone, and a new automatic test clicks every control on the asset screen and in Settings to check that nothing moves.
+
 Pack 4, 21 November 2026 (arrived on its own, nothing to install)
 
 - Fixed for every button: tapping a button, chip or switch no longer moves the page. Whatever you tap now stays exactly where it was, even when the chart or a list above it changes size. Packs 2 and 3 had only fixed single cases.
