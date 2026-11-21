@@ -48,5 +48,5 @@
   "history": { "1d": "5y", "1wk": "10y", "1h": "6mo" },
   "nearSteps": [0.5, 1, 2],
   "checkMinutes": { "normal": 180, "hourly": 60 },
-  "updateUrl": ""
+  "updateUrl": "https://maqqros.github.io/ema-crossing-updates"
 }
