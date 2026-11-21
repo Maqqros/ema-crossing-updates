@@ -6,6 +6,11 @@ What changed in each version of EMA Crossing, newest first. In the app: Settings
 
 Finished 21 November 2026. Everything from 1.1 below is in it.
 
+Pack 2, 21 November 2026 (arrived on its own, nothing to install)
+
+- Fixed: on an asset's screen, tapping a crossing under "Crossings you are alerted on" made the page jump. The list now stays where it is.
+- Added: every pack has an id. Settings shows it at the bottom with the pack number and when it was built, so you can tell exactly which content the phone is running.
+
 Changed
 
 - **The app is now an engine and a pack.** The installed part is a small engine. Every screen, calculation, list, text and article is a file in a pack, and a newer pack arrives from your update server on its own, with nothing to install. The screens look and work as they did in 1.1.

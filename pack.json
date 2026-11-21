@@ -1,9 +1,11 @@
 {
  "format": 1,
- "version": 1,
+ "version": 2,
  "name": "1.2",
  "minApi": 1,
- "notes": "The app now runs from a pack of files that updates on its own.",
+ "notes": "Fixed the page jumping when a crossing is tapped. Settings now shows the pack id.",
+ "id": "15874949",
+ "built": "21 Nov 2026 17:53",
  "files": {
   "app.css": {
    "sha256": "7d02c06e75456e392daae3c1dcc8c3e3b32b2daccc4f5238198527c9279e01ec",
@@ -50,8 +52,8 @@
    "size": 2992
   },
   "data/changelog.md": {
-   "sha256": "41d971420df99181035c0b2a6abbb5fea5e9ebe4380e65bcd495fd66919e5899",
-   "size": 7779
+   "sha256": "15b9ac46273e8d68cfa603c338cd4b8dc1ac7aea19c422a3be9d5e60a9512925",
+   "size": 8153
   },
   "index.html": {
    "sha256": "f7fe318eb75e146ab18e7bbc262d05dd4011ed4434c107578bea911b5d6f2d23",
@@ -86,8 +88,8 @@
    "size": 11215
   },
   "js/screens.js": {
-   "sha256": "9d904b102af9a244fbdfdab0c0eda9ecff2a350c55fe3ecd9291be0fd9b71832",
-   "size": 41190
+   "sha256": "56d5458c4c34ccedb42a6e19667f5fed94489bcb4e517380749aa91b69e72d02",
+   "size": 41782
   },
   "js/ui.js": {
    "sha256": "1a05c3faf83d17f31c200570b71845b5ea371b0b09ac2523e07f540a8148dbeb",

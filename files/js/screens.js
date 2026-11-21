@@ -296,8 +296,9 @@
         'Prices come from Yahoo Finance and are delayed. A crossing counts only once its day, week or hour has closed.\n\n' +
         'Alerts describe what happened. They are not advice to buy or sell.'),
       h('div', null, U.btn("What's new in this version", () => go('news'), 'outline')),
-      h('div', { class: 't-body-s muted', style: 'padding-left:4px' },
-        `EMA Crossing version ${EMA.pack.name || host.info.shellName} · content ${EMA.pack.version} · engine ${host.info.shellName}`)
+      h('div', { class: 't-body-s muted', style: 'padding-left:4px;white-space:pre-line' },
+        `EMA Crossing version ${EMA.pack.name || host.info.shellName} · engine ${host.info.shellName}
+Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · built ' + EMA.pack.built : ''}`)
     ];
     return h('div', { class: 'body list', 'data-keep': 'settings' }, cards);
   }
@@ -631,10 +632,19 @@
         : U.empty(`Loading ${C.tfWord(asset.tf)} prices…`, 'If nothing appears, go back and pull down on the watchlist to refresh.')));
     }
 
-    kids.push(h('div', { class: 'section' }, 'Crossings you are alerted on'),
+    // The chart above changes height with the crossing shown, so the list is held where it was under the finger.
+    const listTop = () => {
+      const el = document.getElementById('crossings');
+      return el ? el.getBoundingClientRect().top : null;
+    };
+    kids.push(h('div', { class: 'section', id: 'crossings' }, 'Crossings you are alerted on'),
       h('div', { class: 'list tight' }, g.items.map(a => crossingRow(a, M.entryOf(a), a.id === asset.id, g.items.length > 1, () => {
+        const before = listTop();
         d.selected = a.id;
         EMA.draw();
+        const after = listTop();
+        const body = document.querySelector('[data-keep]');
+        if (before != null && after != null && body) body.scrollTop += after - before;
       }))));
     if (has) kids.push(trackRecord(bars, asset));
 
