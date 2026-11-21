@@ -6,6 +6,10 @@ What changed in each version of EMA Crossing, newest first. In the app: Settings
 
 Finished 21 November 2026. Everything from 1.1 below is in it.
 
+Pack 3, 21 November 2026 (arrived on its own, nothing to install)
+
+- Fixed: with RSI or MACD shown on the chart, tapping a crossing still moved the list down a little each time. Pack 2 had only fixed it for a plain chart.
+
 Pack 2, 21 November 2026 (arrived on its own, nothing to install)
 
 - Fixed: on an asset's screen, tapping a crossing under "Crossings you are alerted on" made the page jump. The list now stays where it is.
@@ -21,7 +25,7 @@ Changed
 Added
 
 - **Safety for updates**: a pack is accepted only when its file list is signed with the app's own key and every file matches the list. A pack that fails to start is set aside by itself and the one before it is used again.
-- The version line in Settings now shows three numbers: the version, the pack ("content") and the engine.
+- The version lines in Settings show the version, the engine and the pack.
 
 Under the hood
 

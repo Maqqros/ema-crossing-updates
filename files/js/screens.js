@@ -642,9 +642,14 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
         const before = listTop();
         d.selected = a.id;
         EMA.draw();
-        const after = listTop();
-        const body = document.querySelector('[data-keep]');
-        if (before != null && after != null && body) body.scrollTop += after - before;
+        const hold = () => {
+          const after = listTop();
+          const body = document.querySelector('[data-keep]');
+          if (before != null && after != null && body) body.scrollTop += after - before;
+        };
+        hold();
+        // The chart fills in its labels a moment later (RSI, MACD, the price line), which moves the list again.
+        requestAnimationFrame(hold);
       }))));
     if (has) kids.push(trackRecord(bars, asset));
 
