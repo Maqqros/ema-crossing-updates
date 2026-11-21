@@ -1,0 +1,52 @@
+{
+  "defaults": [
+    { "id": "gold", "name": "Gold", "symbol": "GC=F", "fast": 50, "slow": 200 },
+    { "id": "nvda", "name": "Nvidia", "symbol": "NVDA", "fast": 50, "slow": 200 },
+    { "id": "aot", "name": "Airports of Thailand", "symbol": "AOT.BK", "fast": 50, "slow": 200 },
+    { "id": "set", "name": "SET50 (TDEX ETF)", "symbol": "TDEX.BK", "fast": 50, "slow": 200 },
+    { "id": "spx", "name": "S&P 500", "symbol": "^GSPC", "fast": 50, "slow": 200 },
+    { "id": "btc", "name": "Bitcoin", "symbol": "BTC-USD", "fast": 50, "slow": 200 },
+    { "id": "ant", "name": "Anthropic", "symbol": "ANT", "fast": 5, "slow": 20 }
+  ],
+  "popular": [
+    { "symbol": "GOLD-THB", "name": "Gold in baht", "detail": "Thai gold per baht-weight · calculated" },
+    { "symbol": "GC=F", "name": "Gold", "detail": "GC=F · Futures" },
+    { "symbol": "SI=F", "name": "Silver", "detail": "SI=F · Futures" },
+    { "symbol": "CL=F", "name": "Crude oil (WTI)", "detail": "CL=F · Futures" },
+    { "symbol": "BTC-USD", "name": "Bitcoin", "detail": "BTC-USD · Crypto" },
+    { "symbol": "ETH-USD", "name": "Ethereum", "detail": "ETH-USD · Crypto" },
+    { "symbol": "^GSPC", "name": "S&P 500", "detail": "^GSPC · Index" },
+    { "symbol": "^NDX", "name": "Nasdaq 100", "detail": "^NDX · Index" },
+    { "symbol": "NVDA", "name": "Nvidia", "detail": "NVDA · NASDAQ" },
+    { "symbol": "AAPL", "name": "Apple", "detail": "AAPL · NASDAQ" },
+    { "symbol": "TSLA", "name": "Tesla", "detail": "TSLA · NASDAQ" },
+    { "symbol": "TDEX.BK", "name": "SET50 (TDEX ETF)", "detail": "TDEX.BK · Thailand" },
+    { "symbol": "AOT.BK", "name": "Airports of Thailand", "detail": "AOT.BK · Thailand" },
+    { "symbol": "PTT.BK", "name": "PTT", "detail": "PTT.BK · Thailand" },
+    { "symbol": "THB=X", "name": "USD / THB", "detail": "THB=X · Currency" }
+  ],
+  "derived": {
+    "GOLD-THB": {
+      "name": "Gold in baht",
+      "base": "GC=F",
+      "rate": "THB=X",
+      "factor": 0.47295227136793916,
+      "currency": "THB",
+      "words": "thai gold baht ทอง",
+      "note": "Calculated from US gold futures and the dollar-baht rate, per baht-weight of 96.5% gold. It follows the Gold Traders Association price closely but is not the same number."
+    }
+  },
+  "presets": [[50, 200], [20, 50], [12, 26], [1, 200], [1, 50]],
+  "frames": [["1d", "Daily"], ["1wk", "Weekly"], ["1h", "Hourly"]],
+  "indicators": [["rsi", 30, 70], ["macd", 12, 26]],
+  "chartOptions": [["candles", "Candles"], ["bands", "Bollinger"], ["sma", "SMA"], ["rsi", "RSI"], ["macd", "MACD"]],
+  "ranges": {
+    "1d": [["3M", 92], ["6M", 183], ["1Y", 365], ["2Y", 730], ["5Y", 1830]],
+    "1wk": [["1Y", 365], ["2Y", 730], ["5Y", 1830], ["10Y", 3660]],
+    "1h": [["1W", 7], ["2W", 14], ["1M", 31], ["3M", 92], ["6M", 183]]
+  },
+  "history": { "1d": "5y", "1wk": "10y", "1h": "6mo" },
+  "nearSteps": [0.5, 1, 2],
+  "checkMinutes": { "normal": 180, "hourly": 60 },
+  "updateUrl": ""
+}

@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>EMA Crossing: background work</title>
+</head>
+<body>
+<script src="js/host.js"></script>
+<script src="js/core.js"></script>
+<script src="js/data.js"></script>
+<script src="js/check.js"></script>
+<script>
+// The engine opens this page without a screen and says which job to do: "check" (prices, alerts, widgets and a
+// look at the update server) or "widgets" (redraw them from what is saved). It ends by reporting "ok" or "retry".
+(async () => {
+  const host = EMA.host;
+  let result = 'ok';
+  try {
+    await EMA.boot();
+    host.ready();
+    if (host.info.job === 'widgets') EMA.check.widgets();
+    else {
+      const sent = await EMA.check.run();
+      if (sent !== null && sent < 0) result = 'retry';
+      // A newer pack is fetched in the background too. A failure here never fails the price check.
+      const found = await EMA.check.update({ background: true });
+      if (found && found.status === 'updated') host.emit('pack');
+    }
+  } catch (e) {
+    host.log('background job failed: ' + e);
+    result = 'retry';
+  }
+  host.done(result);
+})();
+</script>
+</body>
+</html>
