@@ -437,7 +437,9 @@
       st.zoom = null; // picking a range clears the zoom
       EMA.draw();
     }));
-    requestAnimationFrame(paint);
+    // Painted as soon as the screen is in place, so the chart has its final height before scroll is put back.
+    if (EMA.afterDraw) EMA.afterDraw.push(paint);
+    else requestAnimationFrame(paint);
     if (window.ResizeObserver) new ResizeObserver(() => paint()).observe(price);
     return h('div', null, card, picker);
   };

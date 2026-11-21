@@ -632,24 +632,10 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
         : U.empty(`Loading ${C.tfWord(asset.tf)} prices…`, 'If nothing appears, go back and pull down on the watchlist to refresh.')));
     }
 
-    // The chart above changes height with the crossing shown, so the list is held where it was under the finger.
-    const listTop = () => {
-      const el = document.getElementById('crossings');
-      return el ? el.getBoundingClientRect().top : null;
-    };
-    kids.push(h('div', { class: 'section', id: 'crossings' }, 'Crossings you are alerted on'),
+    kids.push(h('div', { class: 'section' }, 'Crossings you are alerted on'),
       h('div', { class: 'list tight' }, g.items.map(a => crossingRow(a, M.entryOf(a), a.id === asset.id, g.items.length > 1, () => {
-        const before = listTop();
         d.selected = a.id;
         EMA.draw();
-        const hold = () => {
-          const after = listTop();
-          const body = document.querySelector('[data-keep]');
-          if (before != null && after != null && body) body.scrollTop += after - before;
-        };
-        hold();
-        // The chart fills in its labels a moment later (RSI, MACD, the price line), which moves the list again.
-        requestAnimationFrame(hold);
       }))));
     if (has) kids.push(trackRecord(bars, asset));
 

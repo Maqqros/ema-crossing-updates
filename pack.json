@@ -1,11 +1,11 @@
 {
  "format": 1,
- "version": 3,
+ "version": 4,
  "name": "1.2",
  "minApi": 1,
- "notes": "Fixed the list still creeping down when a crossing is tapped with RSI or MACD on.",
- "id": "b53c0c6a",
- "built": "21 Nov 2026 18:04",
+ "notes": "Tapping a button no longer moves the page, on every screen.",
+ "id": "5cd5df13",
+ "built": "21 Nov 2026 18:19",
  "files": {
   "app.css": {
    "sha256": "7d02c06e75456e392daae3c1dcc8c3e3b32b2daccc4f5238198527c9279e01ec",
@@ -52,20 +52,20 @@
    "size": 2992
   },
   "data/changelog.md": {
-   "sha256": "3902df0cbcddffd827378495af0d84957165ec3e32becf5fed41e441c7650825",
-   "size": 8345
+   "sha256": "18c884ff87680f8334df2724f2690e5d36e1cd4515b2978694ea3cce8569c8b2",
+   "size": 8753
   },
   "index.html": {
    "sha256": "f7fe318eb75e146ab18e7bbc262d05dd4011ed4434c107578bea911b5d6f2d23",
    "size": 668
   },
   "js/app.js": {
-   "sha256": "3030c7476018bef3715eb2479c7afa01d1a54079849b05d8c6ad7d15cb59447e",
-   "size": 4847
+   "sha256": "25462e6a1e4c5b1d687155395ac503b20a26ccdf7667877f91dd16316a6061fc",
+   "size": 7384
   },
   "js/chart.js": {
-   "sha256": "c9352e75ca8230afee9a6e4c799a0494b70b17b4600cd25f3a8a284471aa81e7",
-   "size": 18533
+   "sha256": "68c42138a0e82161475fad7717d27e84ac981c1c8e86face406b46dbfacc97cb",
+   "size": 18699
   },
   "js/check.js": {
    "sha256": "d5843e4ae7790997505701fde427adb1f09dd6b9ccc8482d7bc67d5cb95ff4dc",
@@ -88,8 +88,8 @@
    "size": 11215
   },
   "js/screens.js": {
-   "sha256": "eb87ea47b6b8d674b7c29f2a497f3d8554497c93d44c31a2fe8106422bbcd006",
-   "size": 41994
+   "sha256": "53d81470219e50b899a8fab4f1d593c9229b0a7b7a04dd034777a394aea0067a",
+   "size": 41290
   },
   "js/ui.js": {
    "sha256": "1a05c3faf83d17f31c200570b71845b5ea371b0b09ac2523e07f540a8148dbeb",

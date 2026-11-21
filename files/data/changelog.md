@@ -6,6 +6,11 @@ What changed in each version of EMA Crossing, newest first. In the app: Settings
 
 Finished 21 November 2026. Everything from 1.1 below is in it.
 
+Pack 4, 21 November 2026 (arrived on its own, nothing to install)
+
+- Fixed for every button: tapping a button, chip or switch no longer moves the page. Whatever you tap now stays exactly where it was, even when the chart or a list above it changes size. Packs 2 and 3 had only fixed single cases.
+- The row of chart options (Candles, Bollinger, SMA, RSI, MACD) keeps its sideways position when you tap one.
+
 Pack 3, 21 November 2026 (arrived on its own, nothing to install)
 
 - Fixed: with RSI or MACD shown on the chart, tapping a crossing still moved the list down a little each time. Pack 2 had only fixed it for a plain chart.

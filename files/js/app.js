@@ -8,6 +8,60 @@
   const view = () => route === 'widget' ? V.widget() : route === 'add' ? V.add() : route === 'order' ? V.order() : route === 'news' ? V.news()
     : route.startsWith('a:') ? V.article(route.slice(2)) : route.startsWith('d:') ? V.detail(route.slice(2)) : V.home();
 
+  // --- holding the screen still ---
+  // Every change draws the whole screen again. Whatever was tapped is put back exactly where it was,
+  // so the page never moves under the finger, whatever grew or shrank above it.
+  let tap = null; // {keep, chain: [{path, tag, top}] from the tapped element up to the scrolling body, at}
+  const pathOf = (el, body) => {
+    const path = [];
+    while (el && el !== body) {
+      const parent = el.parentElement;
+      if (!parent) return null;
+      path.unshift(Array.prototype.indexOf.call(parent.children, el));
+      el = parent;
+    }
+    return el === body ? path : null;
+  };
+  const follow = (body, path) => {
+    let el = body;
+    for (const i of path) {
+      el = el.children[i];
+      if (!el) return null;
+    }
+    return el;
+  };
+  document.addEventListener('click', e => {
+    const target = e.target instanceof Element ? e.target : null;
+    const body = target && target.closest('[data-keep]');
+    tap = null;
+    if (!body) return;
+    const chain = [];
+    for (let el = target; el && el !== body; el = el.parentElement) {
+      const path = pathOf(el, body);
+      if (path) chain.push({ path, tag: el.tagName, top: el.getBoundingClientRect().top });
+    }
+    if (chain.length) tap = { keep: body.dataset.keep, chain, at: Date.now() };
+  }, true);
+  // Once the user moves the page themself, nothing is put back.
+  const forget = () => {
+    tap = null;
+  };
+  document.addEventListener('touchmove', forget, { capture: true, passive: true });
+  document.addEventListener('wheel', forget, { capture: true, passive: true });
+
+  function holdStill(root) {
+    if (!tap || Date.now() - tap.at > 2500) return;
+    for (const body of root.querySelectorAll('[data-keep]')) {
+      if (body.dataset.keep !== tap.keep) continue;
+      for (const link of tap.chain) {
+        const el = follow(body, link.path);
+        if (!el || el.tagName !== link.tag) continue;
+        body.scrollTop += el.getBoundingClientRect().top - link.top;
+        return;
+      }
+    }
+  }
+
   /** Puts the present state on the screen, keeping scroll positions and the field being typed in. */
   EMA.draw = () => {
     const root = document.getElementById('app');
@@ -15,19 +69,31 @@
     root.querySelectorAll('[data-keep]').forEach(el => {
       scroll[el.dataset.keep] = el.scrollTop;
     });
+    const sideways = Array.from(root.querySelectorAll('.scroller')).map(el => el.scrollLeft);
+    const was = drawn;
     const active = document.activeElement;
     const focus = active && active.id && root.contains(active) ? { id: active.id, a: active.selectionStart, b: active.selectionEnd } : null;
     const before = EMA.keep;
     EMA.keep = null;
+    EMA.afterDraw = []; // work that needs the screen in place (the chart measuring itself), done before scroll is put back
     const screen = view();
+    const jobs = EMA.afterDraw;
+    EMA.afterDraw = null;
     // A screen that asks to be left alone (an article being read) is not replaced by an identical one.
     if (EMA.keep && EMA.keep === before && drawn === route) return;
     if (drawn === route + '/' + V.state.tab) screen.style.animation = 'none';
     drawn = route + '/' + V.state.tab;
     root.replaceChildren(screen);
+    jobs.forEach(job => job());
     root.querySelectorAll('[data-keep]').forEach(el => {
       if (scroll[el.dataset.keep]) el.scrollTop = scroll[el.dataset.keep];
     });
+    if (was === drawn) {
+      root.querySelectorAll('.scroller').forEach((el, i) => {
+        if (sideways[i]) el.scrollLeft = sideways[i];
+      });
+      holdStill(root);
+    }
     if (focus) {
       const again = document.getElementById(focus.id);
       if (again) {
