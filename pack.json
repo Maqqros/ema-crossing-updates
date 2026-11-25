@@ -1,15 +1,15 @@
 {
  "format": 1,
- "version": 6,
+ "version": 7,
  "name": "1.2",
  "minApi": 1,
- "notes": "More than one watchlist: make, rename and delete lists, and move assets between them.",
- "id": "61bac88e",
- "built": "25 Nov 2026 10:56",
+ "notes": "Hold an asset's card and drag it onto another watchlist to move it.",
+ "id": "ca67f370",
+ "built": "25 Nov 2026 11:07",
  "files": {
   "app.css": {
-   "sha256": "550b08ffc942b6681374c9004de944466052e9703e51e909cf4c0dc5c905fa4d",
-   "size": 13304
+   "sha256": "f1bfcf2ccccf7ddb6c57fa906c54d02ca271dd8457590beb4ce9f588eb88744d",
+   "size": 13960
   },
   "articles/001-2026-11-20-most-trades-lost.html": {
    "sha256": "a7b6cb67db1b0e21f8764ec7ff07e2fefcd47efa5d11d5e43db34adf8a2ff129",
@@ -52,8 +52,8 @@
    "size": 2992
   },
   "data/changelog.md": {
-   "sha256": "7f0919986cf866ed0ef65f338c28a81726ed0b5ea1445b1691eb8cbdc1e5d63f",
-   "size": 9857
+   "sha256": "c590df21488db9dd616eadb2847016e3b37080a2444ebe8d04c89efd50dfaffe",
+   "size": 10091
   },
   "index.html": {
    "sha256": "f7fe318eb75e146ab18e7bbc262d05dd4011ed4434c107578bea911b5d6f2d23",
@@ -88,8 +88,8 @@
    "size": 15504
   },
   "js/screens.js": {
-   "sha256": "5971eb554a625182648545895815242f88b006b5dbdc3ec1936e1b0873b33366",
-   "size": 47176
+   "sha256": "69d2d366798bc6713ec16daa2c05a8f53a3ca68fdb744bb7379746ee47231e01",
+   "size": 49098
   },
   "js/ui.js": {
    "sha256": "234019f80748f8d9ee5f0375aac936c1098ff0f677b579c8da543a0563e475ea",

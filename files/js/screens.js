@@ -9,11 +9,24 @@
   V.state = st;
   const two = n => String(n).padStart(2, '0');
 
-  // --- watchlist: hold a card and drag it to reorder; pull down to check prices ---
+  // --- watchlist: hold a card and drag it to reorder, or onto another watchlist to move it; pull down to check prices ---
   let lifted = false, dragEndedAt = 0;
 
-  function attachDrag(body) {
-    let timer = 0, card = null, startX = 0, startY = 0, baseTop = 0;
+  function attachDrag(body, wrap) {
+    let timer = 0, card = null, startX = 0, startY = 0, baseTop = 0, bar = null, over = null;
+    // While a card is held, the other watchlists appear at the bottom as places to drop it.
+    const showBar = () => {
+      const others = M.lists.filter(l => l.id !== M.listId);
+      if (!others.length) return;
+      const g = M.allGroups().find(x => x.symbol === card.dataset.symbol);
+      bar = h('div', { class: 'dropbar' }, h('div', { class: 't-label-m muted one-line' }, `Drop here to move ${g ? g.name : 'it'} to`),
+        h('div', { class: 'droptargets' }, others.map(l => h('div', { class: 'drop', 'data-list': l.id }, U.icon('move', 18), h('span', { class: 'one-line' }, l.name)))));
+      wrap.appendChild(bar);
+    };
+    const targetAt = (x, y) => bar ? Array.from(bar.querySelectorAll('.drop')).find(el => {
+      const r = el.getBoundingClientRect();
+      return x >= r.left - 4 && x <= r.right + 4 && y >= r.top - 12 && y <= r.bottom + 12;
+    }) || null : null;
     const cards = () => Array.from(body.querySelectorAll('[data-symbol]'));
     const cancel = () => {
       clearTimeout(timer);
@@ -33,6 +46,7 @@
         c.classList.add('lifted');
         c.style.transform = 'scale(1.02)';
         host.haptic();
+        showBar();
       }, 450);
     }, { passive: true });
     body.addEventListener('touchmove', e => {
@@ -42,6 +56,17 @@
         return;
       }
       if (e.cancelable) e.preventDefault(); // keeps the list from scrolling while a card is held
+      const target = targetAt(t.clientX, t.clientY);
+      if (target !== over) {
+        if (over) over.classList.remove('over');
+        if (target) {
+          target.classList.add('over');
+          host.haptic();
+        }
+        over = target;
+        card.classList.toggle('dropping', !!target);
+      }
+      if (target) return; // over a watchlist: the cards stay where they are
       const want = baseTop + (t.clientY - startY);
       const middle = want + card.offsetHeight / 2;
       const list = cards();
@@ -59,10 +84,19 @@
       cancel();
       if (!lifted) return;
       lifted = false;
-      card.classList.remove('lifted');
+      const symbol = card.dataset.symbol, name = (M.allGroups().find(g => g.symbol === symbol) || { name: symbol }).name;
+      card.classList.remove('lifted', 'dropping');
       card.style.transform = '';
       card = null;
       dragEndedAt = Date.now(); // letting go after a hold must not also count as a tap on the card
+      const to = over && M.lists.find(l => l.id === over.dataset.list);
+      over = null;
+      if (bar) bar.remove();
+      bar = null;
+      if (to) {
+        M.moveTo(symbol, to.id);
+        return U.toast(`Moved ${name} to ${to.name}.`);
+      }
       const order = cards().map(c => c.dataset.symbol);
       if (order.join('\n') !== M.groups().map(g => g.symbol).join('\n')) M.setOrder(order);
     };
@@ -173,9 +207,11 @@
         : U.empty('Your watchlist is empty', 'Add an asset to get an alert when its moving averages cross.', U.btn('Add asset', () => go('add'))));
     }
     for (const g of groups) kids.push(assetCard(g));
-    if (groups.length > 1) kids.push(h('div', { class: 't-body-s muted center' }, 'Hold a card and drag it to reorder.'));
+    if (groups.length > 1 || (groups.length && M.lists.length > 1)) {
+      kids.push(h('div', { class: 't-body-s muted center' }, M.lists.length > 1 ? 'Hold a card and drag it to reorder, or onto another watchlist at the bottom to move it.' : 'Hold a card and drag it to reorder.'));
+    }
     const body = h('div', { class: 'body list fabbed', 'data-keep': 'watch:' + M.listId }, kids);
-    attachDrag(body);
+    attachDrag(body, wrap);
     attachPull(body, wrap, () => M.refresh(false));
     return body;
   }

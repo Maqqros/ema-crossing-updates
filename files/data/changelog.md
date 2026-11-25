@@ -6,7 +6,11 @@ What changed in each version of EMA Crossing, newest first. In the app: Settings
 
 Finished 21 November 2026. Everything from 1.1 below is in it.
 
-Pack 6, November 2026 (arrives on its own, nothing to install)
+Pack 7, 25 November 2026 (arrives on its own, nothing to install)
+
+- **Drag an asset to another watchlist.** Hold a card on the watchlist: your other lists appear at the bottom. Drag the card onto one and let go to move it there.
+
+Pack 6, 25 November 2026 (arrived on its own, nothing to install)
 
 - **More than one watchlist.** Make as many as you like from the ⋮ menu (**New watchlist**), or the **New** chip. When there are two or more, a row of chips at the top of the Watchlist tab switches between them; each chip shows how many assets the list holds.
 - **Rename a watchlist** from the ⋮ menu. The title at the top is the name of the list you are looking at.
