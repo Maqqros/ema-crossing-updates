@@ -13,6 +13,30 @@
   };
   S.saveAssets = list => host.set('assets', list);
 
+  /**
+   * The watchlists: [{id, name, symbols}], each an ordered choice of the assets in `assets`. An asset may be on several.
+   * `assets` stays the one list of everything watched (and alerted on), so a pack from before watchlists still reads it.
+   * Before the user makes a second list there is one, "Watchlist", holding every asset in its present order.
+   * Repairs what it reads: unknown symbols are dropped, and an asset on no list goes on the first one.
+   */
+  S.lists = assets => {
+    const symbols = C.groups(assets).map(g => g.symbol);
+    const known = new Set(symbols);
+    const saved = host.get('lists', null);
+    const lists = (Array.isArray(saved) ? saved : [])
+      .filter(l => l && typeof l.id === 'string' && l.id && typeof l.name === 'string' && Array.isArray(l.symbols))
+      .map(l => ({ id: l.id, name: l.name.trim() || 'Watchlist', symbols: Array.from(new Set(l.symbols.filter(x => known.has(x)))) }))
+      .filter((l, i, all) => all.findIndex(o => o.id === l.id) === i);
+    if (!lists.length) lists.push({ id: 'main', name: 'Watchlist', symbols: [] });
+    const placed = new Set([].concat(...lists.map(l => l.symbols)));
+    for (const x of symbols) if (!placed.has(x)) lists[0].symbols.push(x);
+    return lists;
+  };
+  S.saveLists = lists => host.set('lists', lists);
+  /** The watchlist on screen, by its id. */
+  S.currentList = () => host.get('currentList', '') || '';
+  S.setCurrentList = id => host.set('currentList', id);
+
   /** The last result of each crossing, by its id. */
   S.entries = () => host.get('entries', {}) || {};
   S.saveEntries = map => host.set('entries', map);

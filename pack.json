@@ -1,15 +1,15 @@
 {
  "format": 1,
- "version": 5,
+ "version": 6,
  "name": "1.2",
  "minApi": 1,
- "notes": "Nothing you can see: test files are no longer sent to the phone.",
- "id": "870586d3",
- "built": "21 Nov 2026 18:36",
+ "notes": "More than one watchlist: make, rename and delete lists, and move assets between them.",
+ "id": "61bac88e",
+ "built": "25 Nov 2026 10:56",
  "files": {
   "app.css": {
-   "sha256": "7d02c06e75456e392daae3c1dcc8c3e3b32b2daccc4f5238198527c9279e01ec",
-   "size": 13140
+   "sha256": "550b08ffc942b6681374c9004de944466052e9703e51e909cf4c0dc5c905fa4d",
+   "size": 13304
   },
   "articles/001-2026-11-20-most-trades-lost.html": {
    "sha256": "a7b6cb67db1b0e21f8764ec7ff07e2fefcd47efa5d11d5e43db34adf8a2ff129",
@@ -52,8 +52,8 @@
    "size": 2992
   },
   "data/changelog.md": {
-   "sha256": "4b6b76ea5534fef7b731906aae276b45a9454dbfb5d03c6b373b0c7d830be7f6",
-   "size": 9009
+   "sha256": "7f0919986cf866ed0ef65f338c28a81726ed0b5ea1445b1691eb8cbdc1e5d63f",
+   "size": 9857
   },
   "index.html": {
    "sha256": "f7fe318eb75e146ab18e7bbc262d05dd4011ed4434c107578bea911b5d6f2d23",
@@ -76,24 +76,24 @@
    "size": 25740
   },
   "js/data.js": {
-   "sha256": "ed60c5812c2e7d8c359001518b7b352542f12fa9dc3e46f86b238fb50ce4704e",
-   "size": 5339
+   "sha256": "3da79a8cc799575454b9aee7db6c88aa1365f2bc4bc40c9daf6a06ea2acca852",
+   "size": 6807
   },
   "js/host.js": {
    "sha256": "ce3e5c589bc5fcca6fc3a4c4502eb4345b061c953f67fc20967fb49c39e86d84",
    "size": 2893
   },
   "js/model.js": {
-   "sha256": "44b58c8f800559841354aecc3b4516ecd292508d9c6c80f03ea540b5113e5efb",
-   "size": 11215
+   "sha256": "d674ae57b50c3d6b9ede1c2ddfd6fac6e7875c108a6e002326135ebebeb4c22e",
+   "size": 15504
   },
   "js/screens.js": {
-   "sha256": "53d81470219e50b899a8fab4f1d593c9229b0a7b7a04dd034777a394aea0067a",
-   "size": 41290
+   "sha256": "5971eb554a625182648545895815242f88b006b5dbdc3ec1936e1b0873b33366",
+   "size": 47176
   },
   "js/ui.js": {
-   "sha256": "1a05c3faf83d17f31c200570b71845b5ea371b0b09ac2523e07f540a8148dbeb",
-   "size": 10796
+   "sha256": "234019f80748f8d9ee5f0375aac936c1098ff0f677b579c8da543a0563e475ea",
+   "size": 10881
   }
  }
 }

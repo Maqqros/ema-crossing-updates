@@ -6,6 +6,13 @@ What changed in each version of EMA Crossing, newest first. In the app: Settings
 
 Finished 21 November 2026. Everything from 1.1 below is in it.
 
+Pack 6, November 2026 (arrives on its own, nothing to install)
+
+- **More than one watchlist.** Make as many as you like from the ⋮ menu (**New watchlist**), or the **New** chip. When there are two or more, a row of chips at the top of the Watchlist tab switches between them; each chip shows how many assets the list holds.
+- **Rename a watchlist** from the ⋮ menu. The title at the top is the name of the list you are looking at.
+- **Move an asset to another watchlist**: open it and tap ⇄ at the top, or use **Reorder or move assets** in the ⋮ menu. An asset can also be on several lists at once: tick them under **On watchlists** on its screen.
+- Alerts come for every asset on any list, once each. Your present list stays as it was, under the name "Watchlist", with every asset, crossing and alert kept. Backups now include the lists.
+
 Pack 5, 21 November 2026 (arrived on its own, nothing to install)
 
 - Nothing you can see. The app's test files are no longer sent to the phone, and a new automatic test clicks every control on the asset screen and in Settings to check that nothing moves.

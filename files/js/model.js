@@ -4,7 +4,7 @@
 (function (EMA) {
   const host = EMA.host, C = EMA.core, S = EMA.store, K = EMA.check, U = EMA.ui;
   const M = {
-    assets: [], entries: {}, bars: new Map(), history: [], lastChecked: 0, settings: {}, update: {},
+    assets: [], lists: [], listId: '', entries: {}, bars: new Map(), history: [], lastChecked: 0, settings: {}, update: {},
     checking: false, updating: false, allowed: true,
     /** Hours without any check before the app was opened, when that was 12 or more; null when all is well or dismissed. */
     staleHours: null
@@ -14,6 +14,9 @@
   /** Reads everything again from what is saved on the phone. */
   M.reload = () => {
     M.assets = S.assets();
+    M.lists = S.lists(M.assets);
+    const id = S.currentList();
+    M.listId = M.lists.some(l => l.id === id) ? id : M.lists[0].id;
     M.entries = S.entries();
     M.history = S.history();
     M.lastChecked = S.lastChecked();
@@ -33,7 +36,18 @@
     M.bars = bars;
   };
 
-  M.groups = () => C.groups(M.assets);
+  /** Every watched asset, on any watchlist. */
+  M.allGroups = () => C.groups(M.assets);
+  /** The watchlist on screen. */
+  M.list = () => M.lists.find(l => l.id === M.listId) || M.lists[0];
+  /** The assets of the watchlist on screen, in its order. */
+  M.groups = () => {
+    const by = new Map(M.allGroups().map(g => [g.symbol, g]));
+    return M.list().symbols.map(x => by.get(x)).filter(Boolean);
+  };
+  M.onList = symbol => M.list().symbols.includes(symbol);
+  /** The watchlists an asset is on. */
+  M.listsOf = symbol => M.lists.filter(l => l.symbols.includes(symbol));
   M.barsOf = (symbol, tf = '1d') => M.bars.get(symbol + '|' + tf) || null;
   M.has = symbol => M.assets.some(a => a.symbol === symbol);
   /** The saved result of a crossing, when it was made with the crossing's present settings. */
@@ -78,8 +92,27 @@
 
   const newId = () => 'a' + Date.now() + Math.floor(Math.random() * 1000);
 
-  M.add = (name, symbol) => {
-    if (M.has(symbol)) return;
+  /** Keeps the watchlists, and puts `assets` in their order (first list first), so widgets follow it too. */
+  function saveLists(next) {
+    M.lists = next;
+    S.saveLists(next);
+    const order = Array.from(new Set([].concat(...next.map(l => l.symbols))));
+    const sorted = [].concat(...order.map(x => M.assets.filter(a => a.symbol === x)), M.assets.filter(a => !order.includes(a.symbol)));
+    if (sorted.map(a => a.id).join() !== M.assets.map(a => a.id).join()) {
+      M.assets = sorted;
+      S.saveAssets(sorted);
+    }
+    draw();
+    K.widgets();
+  }
+  const withList = (id, f) => M.lists.map(l => l.id === id ? Object.assign({}, l, { symbols: f(l.symbols) }) : l);
+
+  /** Puts an asset on the watchlist on screen (or on `listId`). A new symbol starts with EMA 50 / 200. */
+  M.add = (name, symbol, listId = M.listId) => {
+    const next = withList(listId, list => list.includes(symbol) ? list : list.concat([symbol]));
+    if (M.has(symbol)) return saveLists(next);
+    M.lists = next;
+    S.saveLists(next);
     save(M.assets.concat([C.asset({ id: newId(), name, symbol, fast: 50, slow: 200 })]), symbol);
   };
 
@@ -107,10 +140,75 @@
   /** Silences or restores the notifications of one crossing. */
   M.toggleMute = id => save(M.assets.map(a => a.id === id ? Object.assign({}, a, { muted: !a.muted }) : a), null);
 
-  M.remove = symbol => save(M.assets.filter(a => a.symbol !== symbol), null);
+  /** Stops watching an asset: takes it off every watchlist and ends its alerts. */
+  M.remove = symbol => {
+    M.lists = M.lists.map(l => Object.assign({}, l, { symbols: l.symbols.filter(x => x !== symbol) }));
+    S.saveLists(M.lists);
+    save(M.assets.filter(a => a.symbol !== symbol), null);
+  };
 
-  /** Puts the watchlist in the order of `symbols`. */
-  M.setOrder = symbols => save([].concat(...symbols.map(s => M.assets.filter(a => a.symbol === s))), null);
+  /** Takes an asset off one watchlist only. It must stay on at least one: removing it altogether is `remove`. */
+  M.takeOff = (symbol, listId = M.listId) => {
+    if (M.listsOf(symbol).filter(l => l.id !== listId).length === 0) return false;
+    saveLists(withList(listId, list => list.filter(x => x !== symbol)));
+    return true;
+  };
+
+  /** Moves an asset from the watchlist on screen to another one. */
+  M.moveTo = (symbol, listId) => {
+    if (listId === M.listId) return;
+    const next = withList(listId, list => list.includes(symbol) ? list : list.concat([symbol]));
+    saveLists(next.map(l => l.id === M.listId ? Object.assign({}, l, { symbols: l.symbols.filter(x => x !== symbol) }) : l));
+  };
+
+  /** Puts the watchlist on screen in the order of `symbols`. */
+  M.setOrder = symbols => {
+    const want = symbols.filter(x => M.onList(x));
+    saveLists(withList(M.listId, list => want.concat(list.filter(x => !want.includes(x)))));
+  };
+
+  // --- the watchlists themselves ---
+  M.switchList = id => {
+    if (!M.lists.some(l => l.id === id)) return;
+    M.listId = id;
+    S.setCurrentList(id);
+    draw();
+  };
+
+  /** Makes a new, empty watchlist and shows it. */
+  M.newList = name => {
+    const clean = name.trim();
+    if (!clean) return;
+    const id = 'l' + Date.now() + Math.floor(Math.random() * 1000);
+    saveLists(M.lists.concat([{ id, name: clean, symbols: [] }]));
+    M.switchList(id);
+  };
+
+  M.renameList = (id, name) => {
+    const clean = name.trim();
+    if (clean) saveLists(M.lists.map(l => l.id === id ? Object.assign({}, l, { name: clean }) : l));
+  };
+
+  /** The assets that are on this watchlist and no other: deleting the list stops watching them. */
+  M.onlyOn = id => {
+    const list = M.lists.find(l => l.id === id);
+    return list ? list.symbols.filter(x => M.listsOf(x).length === 1) : [];
+  };
+
+  /** Deletes a watchlist. The last one cannot be deleted. Assets only on it stop being watched. */
+  M.deleteList = id => {
+    if (M.lists.length < 2) return;
+    const gone = M.onlyOn(id);
+    const next = M.lists.filter(l => l.id !== id);
+    if (M.listId === id) {
+      M.listId = next[0].id;
+      S.setCurrentList(M.listId);
+    }
+    M.lists = next;
+    S.saveLists(next);
+    if (gone.length) save(M.assets.filter(a => !gone.includes(a.symbol)), null);
+    else draw();
+  };
 
   /** Moves an asset up (-1) or down (+1) in the watchlist. */
   M.move = (symbol, by) => {
@@ -170,7 +268,7 @@
   M.exportJson = () => {
     const s = M.settings;
     return JSON.stringify({
-      app: 'EMA Crossing', format: 1, assets: M.assets,
+      app: 'EMA Crossing', format: 1, assets: M.assets, lists: M.lists,
       settings: {
         theme: s.theme, details: s.details, chart: (s.chart || []).join(','), nearOn: s.nearOn, nearPct: s.nearPct,
         quietOn: s.quietOn, quietFrom: s.quietFrom, quietTo: s.quietTo
@@ -181,7 +279,7 @@
   /** Replaces the watchlist and settings with a backup. Gives the number of crossings restored, or -1 if the text is not a backup. */
   M.importJson = text => {
     const list = [];
-    let s = null;
+    let s = null, lists = null;
     try {
       const root = JSON.parse(text);
       if (root.app !== 'EMA Crossing') return -1;
@@ -191,6 +289,7 @@
         if (C.validAsset(a) && !list.some(x => x.id === a.id)) list.push(a);
       }
       s = root.settings || null;
+      lists = Array.isArray(root.lists) ? root.lists : null;
     } catch (e) {
       return -1;
     }
@@ -206,6 +305,9 @@
       });
     }
     S.saveAssets(list);
+    // A backup from before watchlists has none: then every asset goes on one list.
+    S.saveLists(lists || []);
+    S.saveLists(S.lists(list));
     K.schedule();
     M.reload();
     EMA.theme();

@@ -163,12 +163,18 @@
           'The phone may be stopping background checks, so alerts can arrive late. Setting battery use to Unrestricted usually fixes it.'),
         h('div', { class: 'hrow end' }, U.btn('Dismiss', M.dismissStale, 'text'), U.btn('Battery settings', () => host.open('battery'), 'text'))));
     }
+    if (M.lists.length > 1) {
+      kids.push(h('div', { class: 'listbar' }, M.lists.map(l => U.chip(`${l.name} · ${l.symbols.length}`, l.id === M.listId, () => M.switchList(l.id), l.id === M.listId ? 'check' : null)),
+        U.chip('New', false, () => listNameDialog(null), 'add')));
+    }
     if (!groups.length) {
-      kids.push(U.empty('Your watchlist is empty', 'Add an asset to get an alert when its moving averages cross.', U.btn('Add asset', () => go('add'))));
+      kids.push(M.lists.length > 1 || M.assets.length
+        ? U.empty(`${M.list().name} is empty`, 'Add an asset here, or move one from another watchlist: open the asset and tap the arrows at the top.', U.btn('Add asset', () => go('add')))
+        : U.empty('Your watchlist is empty', 'Add an asset to get an alert when its moving averages cross.', U.btn('Add asset', () => go('add'))));
     }
     for (const g of groups) kids.push(assetCard(g));
     if (groups.length > 1) kids.push(h('div', { class: 't-body-s muted center' }, 'Hold a card and drag it to reorder.'));
-    const body = h('div', { class: 'body list fabbed', 'data-keep': 'watch' }, kids);
+    const body = h('div', { class: 'body list fabbed', 'data-keep': 'watch:' + M.listId }, kids);
     attachDrag(body);
     attachPull(body, wrap, () => M.refresh(false));
     return body;
@@ -185,10 +191,10 @@
     // Notifications whose crossing is no longer in the 30-day list.
     const older = M.history.filter(p => !recent.some(r => r.asset.symbol === p.symbol && r.date === p.date));
     if (!recent.length && !older.length) {
-      return h('div', { class: 'body' }, U.empty('No crossings in the last 30 days', 'When one happens on your watchlist you get a notification, and it is listed here.'));
+      return h('div', { class: 'body' }, U.empty('No crossings in the last 30 days', 'When one happens on any of your watchlists you get a notification, and it is listed here.'));
     }
     const kids = [h('div', { class: 'listhead' }, 'Last 30 days')];
-    if (!recent.length) kids.push(h('div', { class: 't-body-m muted' }, 'No crossings on your watchlist in the last 30 days.'));
+    if (!recent.length) kids.push(h('div', { class: 't-body-m muted' }, 'No crossings on your watchlists in the last 30 days.'));
     for (const r of recent) {
       kids.push(alertRow(r.up, `${r.asset.name}: ${C.crossText(r.asset, r.up)}`,
         `${C.barDate(r.date, r.asset.tf)} · ${C.ago(r.date)} · at ${C.money(r.close)} ${r.currency}`.trim(),
@@ -303,6 +309,74 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
     return h('div', { class: 'body list', 'data-keep': 'settings' }, cards);
   }
 
+  // --- the watchlists: new, rename, delete, move an asset ---
+  /** Names a new watchlist (`list` null) or renames one. */
+  function listNameDialog(list) {
+    const input = h('input', { id: 'listname', type: 'text', value: list ? list.name : '', maxlength: 30, autocomplete: 'off', placeholder: 'e.g. Thai stocks' });
+    U.dialog(close => ({
+      title: list ? 'Rename watchlist' : 'New watchlist',
+      body: h('label', { class: 'field' }, h('span', null, 'Name'), input),
+      actions: [['Cancel', close], [list ? 'Save' : 'Create', () => {
+        if (!input.value.trim()) return;
+        close();
+        if (list) M.renameList(list.id, input.value);
+        else M.newList(input.value);
+      }]]
+    }));
+  }
+
+  function deleteListDialog(list) {
+    const only = M.onlyOn(list.id);
+    const names = only.map(x => (M.allGroups().find(g => g.symbol === x) || { name: x }).name);
+    U.dialog(close => ({
+      title: `Delete ${list.name}?`,
+      body: h('div', { class: 't-body-m muted' }, only.length
+        ? `${names.join(', ')} ${only.length === 1 ? 'is' : 'are'} on no other watchlist, so you will stop getting alerts for ${only.length === 1 ? 'it' : 'them'}. ` +
+          'To keep one, move it to another watchlist first.'
+        : 'Every asset on it is also on another watchlist, so no alert is lost.'),
+      actions: [['Keep', close], ['Delete', () => {
+        close();
+        M.deleteList(list.id);
+        U.toast(`${list.name} deleted.`);
+      }, 'danger']]
+    }));
+  }
+
+  /** Moves an asset from the watchlist on screen to another one, or puts it on several. */
+  function moveDialog(g) {
+    U.dialog((close, redraw) => {
+      const here = M.onList(g.symbol);
+      const rows = M.lists.map(l => {
+        const on = l.symbols.includes(g.symbol);
+        const tick = h('div', { class: 'check' + (on ? ' on' : '') }, on ? U.icon('check', 16) : null);
+        return h('div', { class: 'row', role: 'button', style: 'padding:10px 0', onclick: () => {
+          if (on) {
+            if (!M.takeOff(g.symbol, l.id)) return U.toast('Keep it on at least one watchlist, or remove the asset.');
+          } else M.add(g.name, g.symbol, l.id);
+          redraw();
+        } }, tick, h('div', { class: 'grow' }, h('div', { class: 't-body-l one-line' }, l.name), h('div', { class: 't-body-s muted' }, `${l.symbols.length} asset${l.symbols.length === 1 ? '' : 's'}`)));
+      });
+      const others = M.lists.filter(l => l.id !== M.listId);
+      return {
+        title: `Watchlists for ${g.name}`,
+        body: h('div', null,
+          here && others.length ? h('div', { class: 't-body-m muted' }, `Move from ${M.list().name} to:`) : null,
+          here && others.length ? h('div', { class: 'wrapflow mt8' }, others.map(l => U.chip(l.name, false, () => {
+            M.moveTo(g.symbol, l.id);
+            close();
+            U.toast(`Moved ${g.name} to ${l.name}.`);
+          }, 'move'))) : null,
+          h('div', { class: 't-body-m muted' + (here && others.length ? ' mt16' : '') }, 'Or tick every watchlist it should be on:'),
+          h('div', { class: 'mt4' }, rows),
+          others.length ? null : U.btn('New watchlist', () => {
+            close();
+            listNameDialog(null);
+          }, 'outline')),
+        actions: [['Done', close]]
+      };
+    });
+  }
+
   // --- the four tabs ---
   V.home = () => {
     const tab = st.tab;
@@ -314,10 +388,12 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
     const tabs = [['list', 'Watchlist'], ['bell', 'Alerts'], ['info', 'Articles'], ['settings', 'Settings']];
     return h('div', { class: 'screen' },
       h('div', { class: 'top' },
-        h('div', { class: 'titles' }, h('div', { class: 't-headline' }, tabs[tab][1]),
+        h('div', { class: 'titles' }, h('div', { class: 't-headline one-line' }, tab === 0 ? M.list().name : tabs[tab][1]),
           tab === 0 ? h('div', { class: 't-body-s muted' }, C.checkedText(M.lastChecked)) : null),
         tab === 0 ? U.iconBtn('refresh', 'Check prices now', () => M.refresh(false), { disabled: M.checking }) : null,
-        tab === 0 ? U.iconBtn('more', 'More', e => U.menu(e.currentTarget, [['Reorder list', () => go('order')]])) : null),
+        tab === 0 ? U.iconBtn('more', 'More', e => U.menu(e.currentTarget, [
+          ['Reorder or move assets', () => go('order')], ['New watchlist', () => listNameDialog(null)], ['Rename this watchlist', () => listNameDialog(M.list())]]
+          .concat(M.lists.length > 1 ? [['Delete this watchlist', () => deleteListDialog(M.list())]] : []))) : null),
       wrap,
       h('div', { class: 'nav' }, tabs.map((t, i) => h('button', {
         class: i === tab ? 'on' : '', onclick: () => {
@@ -330,9 +406,13 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
   // --- reorder with arrows ---
   V.order = () => {
     const groups = M.groups();
-    return h('div', { class: 'screen' }, U.subTop('Reorder list', () => go('home')),
-      h('div', { class: 'body end', style: 'padding:0 0 24px', 'data-keep': 'order' }, groups.map((g, i) => h('div', { class: 'row' },
+    return h('div', { class: 'screen' }, U.subTop('Reorder or move', () => go('home'), M.list().name),
+      h('div', { class: 'body end', style: 'padding:0 0 24px', 'data-keep': 'order' },
+        groups.length ? null : h('div', { class: 't-body-m muted', style: 'padding:16px' }, 'This watchlist is empty.'),
+        h('div', { class: 't-body-s muted', style: 'padding:4px 16px 8px' }, 'The arrows move an asset up or down. ⇄ moves it to another watchlist.'),
+        groups.map((g, i) => h('div', { class: 'row' },
         h('div', { class: 'grow' }, h('div', { class: 't-body-l one-line', style: 'font-weight:500' }, g.name), h('div', { class: 't-body-m muted' }, g.symbol)),
+        U.iconBtn('move', `Move ${g.name} to another watchlist`, () => moveDialog(g)),
         U.iconBtn('up', `Move ${g.name} up`, () => M.move(g.symbol, -1), { disabled: i === 0 }),
         U.iconBtn('down', `Move ${g.name} down`, () => M.move(g.symbol, 1), { disabled: i === groups.length - 1 })))));
   };
@@ -399,12 +479,12 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
       autocorrect: 'off', spellcheck: 'false', enterkeyhint: 'search'
     });
     const pick = hit => {
-      if (!M.has(hit.symbol)) M.add(hit.name, hit.symbol);
+      if (!M.onList(hit.symbol)) M.add(hit.name, hit.symbol);
       go('d:' + hit.symbol);
     };
     const row = hit => h('div', { class: 'row', role: 'button', onclick: () => pick(hit) },
       h('div', { class: 'grow' }, h('div', { class: 't-body-l one-line', style: 'font-weight:500' }, hit.title || hit.name), h('div', { class: 't-body-m muted one-line' }, hit.detail)),
-      h('div', { class: M.has(hit.symbol) ? 'up' : 'primary' }, U.icon(M.has(hit.symbol) ? 'check' : 'add')));
+      h('div', { class: M.onList(hit.symbol) ? 'up' : 'primary' }, U.icon(M.onList(hit.symbol) ? 'check' : 'add')));
     const header = text => h('div', { class: 'listhead', style: 'margin:16px 16px 4px' }, text);
     const note = text => h('div', { class: 't-body-m muted', style: 'padding:16px' }, text);
 
@@ -571,6 +651,23 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
   }
 
   function removeDialog(g) {
+    const elsewhere = M.listsOf(g.symbol).filter(l => l.id !== M.listId);
+    if (M.onList(g.symbol) && elsewhere.length) {
+      return U.dialog(close => ({
+        title: `Remove ${g.name}?`,
+        body: h('div', { class: 't-body-m muted' }, `It is also on ${elsewhere.map(l => l.name).join(', ')}. ` +
+          `Take it off ${M.list().name} only and keep its alerts, or stop watching it everywhere.`),
+        actions: [['Keep', close], ['Everywhere', () => {
+          close();
+          M.remove(g.symbol);
+          go('home');
+        }, 'danger'], [`From ${M.list().name}`, () => {
+          close();
+          M.takeOff(g.symbol);
+          go('home');
+        }]]
+      }));
+    }
     U.dialog(close => ({
       title: `Remove ${g.name}?`,
       body: h('div', { class: 't-body-m muted' }, 'You will stop getting alerts for it.'),
@@ -605,7 +702,7 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
   }
 
   V.detail = symbol => {
-    const g = M.groups().find(x => x.symbol === symbol);
+    const g = M.allGroups().find(x => x.symbol === symbol);
     if (!g) {
       setTimeout(() => go('home'), 0);
       return h('div', { class: 'screen' });
@@ -639,6 +736,13 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
       }))));
     if (has) kids.push(trackRecord(bars, asset));
 
+    kids.push(h('div', { class: 'section' }, 'On watchlists'),
+      h('div', { class: 'wrapflow' }, M.lists.map(l => U.chip(l.name, l.symbols.includes(symbol), () => {
+        if (!l.symbols.includes(symbol)) M.add(g.name, symbol, l.id);
+        else if (!M.takeOff(symbol, l.id)) U.toast('Keep it on at least one watchlist, or remove the asset.');
+      })), U.chip('New watchlist', false, () => listNameDialog(null), 'add')),
+      h('div', { class: 't-body-s muted mt8' }, 'Tap a watchlist to put this asset on it or take it off. Alerts come once, whichever lists it is on.'));
+
     const mine = g.items.filter(a => a.tf === d.frame && a.kind === 'ema');
     const shown = cat.presets.concat(mine.map(a => [a.fast, a.slow]).filter(p => !cat.presets.some(q => q[0] === p[0] && q[1] === p[1])));
     kids.push(h('div', { class: 'section' }, 'Add or remove crossings'),
@@ -667,7 +771,7 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
             h('div', { class: 't-body-m', style: 'font-weight:500' }, C.money(bars.closes[c.index]))))));
     }
     return h('div', { class: 'screen' },
-      U.subTop(g.name, () => go('home'), g.symbol, [U.iconBtn('edit', 'Rename', () => renameDialog(g)), U.iconBtn('delete', 'Remove asset', () => removeDialog(g))]),
+      U.subTop(g.name, () => go('home'), g.symbol, [U.iconBtn('move', 'Move to another watchlist', () => moveDialog(g)), U.iconBtn('edit', 'Rename', () => renameDialog(g)), U.iconBtn('delete', 'Remove asset', () => removeDialog(g))]),
       h('div', { class: 'body end', style: 'padding-bottom:calc(32px + var(--ib))', 'data-keep': 'd:' + symbol }, kids));
   };
 
@@ -675,7 +779,7 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
   V.widget = () => {
     const info = host.info.widgetSetup;
     const single = info.kind === 'one';
-    const assets = M.groups();
+    const assets = M.allGroups();
     if (!st.widget) {
       const saved = S.widgetSymbols(info.id).filter(s => assets.some(g => g.symbol === s));
       st.widget = new Set(single ? (saved.length ? saved.slice(0, 1) : assets.slice(0, 1).map(g => g.symbol)) : saved);
@@ -686,7 +790,7 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
       h('div', { class: 'grow' }, h('div', { class: 't-body-l one-line', style: 'font-weight:500' }, title), h('div', { class: 't-body-m muted one-line' }, sub)));
     const rows = [];
     if (!single) {
-      rows.push(line('Every asset', 'Follows your watchlist as it changes', chosen.size === 0, () => {
+      rows.push(line('Every asset', 'Every watchlist, following them as they change', chosen.size === 0, () => {
         chosen.clear();
         EMA.draw();
       }));
