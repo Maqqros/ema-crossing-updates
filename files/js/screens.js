@@ -12,8 +12,8 @@
   // --- watchlist: hold a card and drag it to reorder, or onto another watchlist to move it; pull down to check prices ---
   let lifted = false, dragEndedAt = 0;
 
-  function attachDrag(body, wrap) {
-    let timer = 0, card = null, startX = 0, startY = 0, baseTop = 0, bar = null, over = null;
+  function attachDrag(body, wrap, tabs) {
+    let timer = 0, card = null, startX = 0, startY = 0, baseTop = 0, bar = null, over = null, lastY = 0;
     // While a card is held, the other watchlists appear at the bottom as places to drop it.
     const showBar = () => {
       const others = M.lists.filter(l => l.id !== M.listId);
@@ -23,7 +23,8 @@
         h('div', { class: 'droptargets' }, others.map(l => h('div', { class: 'drop', 'data-list': l.id }, U.icon('move', 18), h('span', { class: 'one-line' }, l.name)))));
       wrap.appendChild(bar);
     };
-    const targetAt = (x, y) => bar ? Array.from(bar.querySelectorAll('.drop')).find(el => {
+    // The other watchlists' tabs at the top are places to drop it too.
+    const targetAt = (x, y) => bar ? Array.from(bar.querySelectorAll('.drop')).concat(Array.from(tabs.querySelectorAll('[data-list]'))).find(el => {
       const r = el.getBoundingClientRect();
       return x >= r.left - 4 && x <= r.right + 4 && y >= r.top - 12 && y <= r.bottom + 12;
     }) || null : null;
@@ -47,6 +48,9 @@
         c.style.transform = 'scale(1.02)';
         host.haptic();
         showBar();
+        if (bar) body.classList.add('dragging');
+        lastY = startY;
+        requestAnimationFrame(edge);
       }, 450);
     }, { passive: true });
     body.addEventListener('touchmove', e => {
@@ -66,8 +70,12 @@
         over = target;
         card.classList.toggle('dropping', !!target);
       }
-      if (target) return; // over a watchlist: the cards stay where they are
-      const want = baseTop + (t.clientY - startY);
+      lastY = t.clientY;
+      if (!target) place(t.clientY); // over a watchlist the cards stay where they are
+    }, { passive: false });
+    /** Puts the held card under the finger, and the other cards around it. */
+    function place(y) {
+      const want = baseTop + (y - startY);
       const middle = want + card.offsetHeight / 2;
       const list = cards();
       const i = list.indexOf(card);
@@ -79,7 +87,23 @@
       else if (list[i - 1] && middle < half(list[i - 1])) list[i - 1].before(card);
       card.style.transform = '';
       card.style.transform = `translateY(${want - card.getBoundingClientRect().top}px) scale(1.02)`;
-    }, { passive: false });
+    }
+    // Holding the card near the top or bottom edge scrolls the list, faster the closer to the edge.
+    function edge() {
+      if (!lifted || !card) return;
+      if (!over) {
+        const r = body.getBoundingClientRect();
+        const top = r.top, bottom = bar ? bar.getBoundingClientRect().top : r.bottom, zone = 80;
+        const by = lastY < top + zone ? -Math.ceil(16 * (top + zone - lastY) / zone)
+          : lastY > bottom - zone ? Math.ceil(16 * (lastY - bottom + zone) / zone) : 0;
+        if (by) {
+          const before = body.scrollTop;
+          body.scrollTop = before + Math.max(-24, Math.min(24, by));
+          if (body.scrollTop !== before) place(lastY);
+        }
+      }
+      requestAnimationFrame(edge);
+    }
     const end = () => {
       cancel();
       if (!lifted) return;
@@ -93,6 +117,7 @@
       over = null;
       if (bar) bar.remove();
       bar = null;
+      body.classList.remove('dragging');
       if (to) {
         M.moveTo(symbol, to.id);
         return U.toast(`Moved ${name} to ${to.name}.`);
@@ -197,10 +222,13 @@
           'The phone may be stopping background checks, so alerts can arrive late. Setting battery use to Unrestricted usually fixes it.'),
         h('div', { class: 'hrow end' }, U.btn('Dismiss', M.dismissStale, 'text'), U.btn('Battery settings', () => host.open('battery'), 'text'))));
     }
-    if (M.lists.length > 1) {
-      kids.push(h('div', { class: 'listbar' }, M.lists.map(l => U.chip(`${l.name} · ${l.symbols.length}`, l.id === M.listId, () => M.switchList(l.id), l.id === M.listId ? 'check' : null)),
-        U.chip('New', false, () => listNameDialog(null), 'add')));
-    }
+    // The watchlists' tabs stay at the top, above the scrolling cards.
+    const tabs = h('div', { class: 'listbar scroller' }, M.lists.map(l => {
+      const chip = U.chip(`${l.name} · ${l.symbols.length}`, l.id === M.listId, () => M.switchList(l.id), l.id === M.listId ? 'check' : null);
+      if (l.id !== M.listId) chip.dataset.list = l.id;
+      return chip;
+    }), U.chip('New list', false, () => listNameDialog(null), 'add'));
+    wrap.appendChild(tabs);
     if (!groups.length) {
       kids.push(M.lists.length > 1 || M.assets.length
         ? U.empty(`${M.list().name} is empty`, 'Add an asset here, or move one from another watchlist: open the asset and tap the arrows at the top.', U.btn('Add asset', () => go('add')))
@@ -208,10 +236,10 @@
     }
     for (const g of groups) kids.push(assetCard(g));
     if (groups.length > 1 || (groups.length && M.lists.length > 1)) {
-      kids.push(h('div', { class: 't-body-s muted center' }, M.lists.length > 1 ? 'Hold a card and drag it to reorder, or onto another watchlist at the bottom to move it.' : 'Hold a card and drag it to reorder.'));
+      kids.push(h('div', { class: 't-body-s muted center' }, M.lists.length > 1 ? 'Hold a card and drag it to reorder, or onto another watchlist to move it.' : 'Hold a card and drag it to reorder.'));
     }
     const body = h('div', { class: 'body list fabbed', 'data-keep': 'watch:' + M.listId }, kids);
-    attachDrag(body, wrap);
+    attachDrag(body, wrap, tabs);
     attachPull(body, wrap, () => M.refresh(false));
     return body;
   }

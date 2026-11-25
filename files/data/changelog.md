@@ -6,7 +6,14 @@ What changed in each version of EMA Crossing, newest first. In the app: Settings
 
 Finished 21 November 2026. Everything from 1.1 below is in it.
 
-Pack 7, 25 November 2026 (arrives on its own, nothing to install)
+Pack 8, 25 November 2026 (arrives on its own, nothing to install)
+
+- **The watchlist tabs are always at the top**, even with one list, and stay there while you scroll. **New list** sits beside them.
+- **Drop a card on a tab** at the top to move it to that list, as well as on the bar at the bottom.
+- **A bar to move through time** under the chart on an asset's screen. It shows the whole price history in small, with a frame around the part the chart shows. Drag the frame left or right to move back and forth in time, or tap anywhere on the bar to jump there. Zoom in or out and the frame changes size; **Reset zoom** goes back to the latest prices.
+- **Dragging scrolls the list**: hold a card near the top or bottom edge and the list scrolls, faster the closer you are, so a card can go from the bottom of a long list to the top in one drag.
+
+Pack 7, 25 November 2026 (arrived on its own, nothing to install)
 
 - **Drag an asset to another watchlist.** Hold a card on the watchlist: your other lists appear at the bottom. Drag the card onto one and let go to move it there.
 

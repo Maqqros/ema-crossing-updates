@@ -1,15 +1,15 @@
 {
  "format": 1,
- "version": 7,
+ "version": 8,
  "name": "1.2",
  "minApi": 1,
- "notes": "Hold an asset's card and drag it onto another watchlist to move it.",
- "id": "ca67f370",
- "built": "25 Nov 2026 11:07",
+ "notes": "Watchlist tabs always at the top, dragging near an edge scrolls, and a bar under the chart to move through time.",
+ "id": "ab14af17",
+ "built": "25 Nov 2026 11:18",
  "files": {
   "app.css": {
-   "sha256": "f1bfcf2ccccf7ddb6c57fa906c54d02ca271dd8457590beb4ce9f588eb88744d",
-   "size": 13960
+   "sha256": "8961abb7f0fa6fa9aa91560fcc3f3b6d1d2d9dad3211bd632dea39be34573234",
+   "size": 14673
   },
   "articles/001-2026-11-20-most-trades-lost.html": {
    "sha256": "a7b6cb67db1b0e21f8764ec7ff07e2fefcd47efa5d11d5e43db34adf8a2ff129",
@@ -52,8 +52,8 @@
    "size": 2992
   },
   "data/changelog.md": {
-   "sha256": "c590df21488db9dd616eadb2847016e3b37080a2444ebe8d04c89efd50dfaffe",
-   "size": 10091
+   "sha256": "6d62fe55d4b4bd81cdcb3f91cbf6c7f422cb0feb312c124affbdda0e0583677d",
+   "size": 10938
   },
   "index.html": {
    "sha256": "f7fe318eb75e146ab18e7bbc262d05dd4011ed4434c107578bea911b5d6f2d23",
@@ -64,8 +64,8 @@
    "size": 7384
   },
   "js/chart.js": {
-   "sha256": "68c42138a0e82161475fad7717d27e84ac981c1c8e86face406b46dbfacc97cb",
-   "size": 18699
+   "sha256": "bfb6ae297492adab6aa726679280bd5ee457e1da8ffca66348d8a251193e196a",
+   "size": 21228
   },
   "js/check.js": {
    "sha256": "d5843e4ae7790997505701fde427adb1f09dd6b9ccc8482d7bc67d5cb95ff4dc",
@@ -88,8 +88,8 @@
    "size": 15504
   },
   "js/screens.js": {
-   "sha256": "69d2d366798bc6713ec16daa2c05a8f53a3ca68fdb744bb7379746ee47231e01",
-   "size": 49098
+   "sha256": "7d9a277779cc1be5628eb26a411bcb189543fb4f5d3bb17c636ee7b42a1c656a",
+   "size": 50433
   },
   "js/ui.js": {
    "sha256": "234019f80748f8d9ee5f0375aac936c1098ff0f677b579c8da543a0563e475ea",

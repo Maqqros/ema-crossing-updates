@@ -332,6 +332,68 @@
       st.zoom = null;
       paint();
     }, 'text');
+    // The pan bar: the whole price history in small, with a window over the part the chart shows. Drag the window
+    // to slide along the history; tap elsewhere on the bar to jump there.
+    const navLine = h('canvas', { class: 'navline' });
+    const navWin = h('div', { class: 'navwin' });
+    const nav = h('div', { class: 'navbar mt8', role: 'slider', 'aria-label': 'Pan through time' }, navLine, navWin);
+    let navDrawn = '';
+    function paintNav(a, b) {
+      const w = nav.clientWidth;
+      if (!w || n < 2) return;
+      const key = w + '|' + n + '|' + U.color('muted');
+      if (key !== navDrawn) {
+        const p = U.pen(navLine);
+        if (p) {
+          navDrawn = key;
+          const lo = Math.min(...bars.closes), hi = Math.max(...bars.closes), span = hi > lo ? hi - lo : 1;
+          const ctx = p.ctx;
+          ctx.strokeStyle = U.color('muted');
+          ctx.lineWidth = 1.25;
+          ctx.lineJoin = 'round';
+          ctx.beginPath();
+          bars.closes.forEach((v, i) => {
+            const x = i / (n - 1) * p.w, y = 4 + (hi - v) / span * (p.h - 8);
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+          });
+          ctx.stroke();
+        }
+      }
+      navWin.style.left = (a / (n - 1) * 100) + '%';
+      navWin.style.width = Math.max((b - a) / (n - 1) * 100, 2) + '%';
+    }
+    let panFrom = null;
+    const panTo = start => {
+      const length = st.zoom ? st.zoom[1] : n - 1 - from;
+      st.zoom = [clamp(start, 0, n - 1 - length), length];
+      paint();
+    };
+    nav.addEventListener('pointerdown', e => {
+      const r = nav.getBoundingClientRect();
+      const a = first(), b = end();
+      const at = (e.clientX - r.left) / r.width * (n - 1);
+      // Outside the window: centre the window on the tap first, then drag from there.
+      if (at < a || at > b) panTo(at - (b - a) / 2);
+      panFrom = { x: e.clientX, start: st.zoom ? st.zoom[0] : from, width: r.width };
+      try {
+        nav.setPointerCapture(e.pointerId);
+      } catch (err) {
+        // Pointer capture is only a help.
+      }
+      nav.classList.add('held');
+      e.preventDefault();
+    });
+    nav.addEventListener('pointermove', e => {
+      if (!panFrom) return;
+      panTo(panFrom.start + (e.clientX - panFrom.x) / panFrom.width * (n - 1));
+    });
+    const panEnd = () => {
+      panFrom = null;
+      nav.classList.remove('held');
+    };
+    nav.addEventListener('pointerup', panEnd);
+    nav.addEventListener('pointercancel', panEnd);
+
     const item = (color, label, value) => h('div', { class: 'hrow' }, h('i', { style: 'background:' + color }),
       h('div', null, h('div', { class: 't-label-s muted' }, label), h('div', { class: 't-body-m', style: 'font-weight:600' }, money(value))));
 
@@ -371,6 +433,7 @@
       dateFrom.textContent = C.niceDate(bars.dates[a], true);
       dateTo.textContent = C.niceDate(bars.dates[b], true);
       reset.style.display = st.zoom ? '' : 'none';
+      paintNav(a, b);
     }
 
     // One finger reads the bar under it; two fingers pinch to zoom and slide along the history.
@@ -430,6 +493,7 @@
       rsi ? [rsiLabel, rsiPane] : null,
       macd ? [macdLabel, macdPane] : null,
       h('div', { class: 'hrow between t-label-s muted mt6' }, dateFrom, h('span', null, 'Drag to inspect · pinch to zoom'), dateTo),
+      nav,
       h('div', { class: 'hrow end' }, reset,
         U.btn('Zoom out', () => transform(1 / 1.5, 0, 1), 'text'), U.btn('Zoom in', () => transform(1.5, 0, 1), 'text')));
     const picker = h('div', { class: 'mt4' }, U.seg(ranges.map((r, i) => [i, r[0]]), st.range, i => {
