@@ -628,7 +628,11 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
         EMA.draw();
       })));
     if (!sc.results.at) {
-      kids.push(U.empty('No scan yet', `The first scan downloads 5 years of prices for ${sc.list.symbols.length} symbols, about 20 to 30 MB, in about 5 minutes. ` +
+      const seeded = !!(EMA.pack.files || {})['data/scan-seed.json'];
+      kids.push(U.empty('No scan yet', (seeded
+        ? `The app already holds 5 years of prices for ${sc.list.symbols.length} symbols, so the first scan only adds the weeks since. `
+        : `The first scan downloads 5 years of prices for ${sc.list.symbols.length} symbols. `) +
+        `At 2 requests a second that takes about ${Math.max(1, Math.round(sc.list.symbols.length / 2 / 60))} minutes. ` +
         'After that each scan takes only the latest prices. It also runs by itself after each market closes.', U.btn(sc.running ? 'Scanning…' : 'Scan now', M.scanNow, '', sc.running)));
     } else if (!shown.length) {
       kids.push(U.empty('No recent crossings', hits.length ? 'None match these filters.' : 'None of the symbols crossed in that span. Try a longer span or more rules below.'));
@@ -636,6 +640,12 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
       kids.push(h('div', { class: 'listhead' }, `${shown.length} recent crossing${shown.length === 1 ? '' : 's'}`));
       for (const x of shown.slice(0, 200)) kids.push(hitRow(x));
       if (shown.length > 200) kids.push(h('div', { class: 't-body-s muted center' }, `And ${shown.length - 200} more. Narrow it down with the filters.`));
+    }
+    const stale = (sc.results.stale || []).filter(x => !scanFilter.list || x.lists.includes(scanFilter.list));
+    if (stale.length) {
+      kids.push(h('div', { class: 't-body-s muted' }, `No recent prices, so not scanned: ` +
+        stale.slice(0, 10).map(x => `${x.symbol} (last ${C.niceDate(x.last)})`).join(', ') + (stale.length > 10 ? ` and ${stale.length - 10} more` : '') +
+        '. Yahoo has nothing newer: the share may be suspended or renamed.'));
     }
     kids.push(scanRules());
     const kb = Math.round(EMA.scan.size() / 1024);

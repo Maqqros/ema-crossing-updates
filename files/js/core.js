@@ -615,8 +615,57 @@ window.EMA = window.EMA || {};
     return { lists: lists.filter(l => l.items.length), symbols: Array.from(by.values()), skipped };
   };
 
-  /** Which market a symbol trades on, for the time of its scan: "th" (Thailand), "crypto" or "us" (the rest). */
-  C.marketOf = symbol => /\.BK$/.test(symbol) || symbol === '^SET.BK' ? 'th' : /-USD$/.test(symbol) ? 'crypto' : 'us';
+  /**
+   * The starting history written by tools/make_scan_seed.py. Format 1 (pack 10 drafts): {c: currency, u: closeUtc,
+   * s: first date, g: [days from each bar to the next], v: [closes]}. Format 2: the same c, u and s; g: the days
+   * between bars as a text of base-36 digits (or a list); t: the price step; C: [closes in steps, the first whole
+   * and each later one as the change from the day before]; O: [open - close], H: [high - max(open, close)],
+   * L: [min(open, close) - low] in steps; w: the volume unit; V: [volumes in units].
+   * Gives {built, symbols: {SYMBOL: {dates, closes, currency, closeUtc, opens, highs, lows, volumes}}}. Format 1,
+   * or `full` false, gives no opens to volumes. A symbol whose arrays do not add up is left out.
+   */
+  C.readSeed = (json, full = true) => {
+    if (!json || (json.format !== 1 && json.format !== 2) || !json.symbols) throw new Error('Not a starting history this version can read');
+    const symbols = {};
+    for (const symbol of Object.keys(json.symbols)) {
+      const x = json.symbols[symbol];
+      const gaps = !x ? null : typeof x.g === 'string' ? Array.from(x.g, ch => parseInt(ch, 36)) : x.g;
+      const n = Array.isArray(gaps) && gaps.every(g => g > 0) ? gaps.length + 1 : 0;
+      if (!n || typeof x.s !== 'string') continue;
+      const two = json.format === 2;
+      if (two ? !(x.t > 0) || ['C', 'O', 'H', 'L', 'V'].some(k => !Array.isArray(x[k]) || x[k].length !== n)
+        : !Array.isArray(x.v) || x.v.length !== n) continue;
+      let day = dayNumber(x.s);
+      const dates = [x.s];
+      for (const g of gaps) {
+        day += g;
+        dates.push(new Date(day * 86400000).toISOString().slice(0, 10));
+      }
+      const out = { dates, currency: x.c || '', closeUtc: typeof x.u === 'number' ? x.u : -1 };
+      if (two) {
+        // Dividing by a whole number keeps 12345 steps of 0.01 at 123.45, where multiplying gives 123.45000000000002.
+        const per = x.t < 1 ? Math.round(1 / x.t) : 0;
+        const price = k => per ? k / per : k * x.t;
+        let k = 0;
+        const steps = x.C.map(d => (k += d));
+        out.closes = steps.map(price);
+        if (full) {
+          out.opens = steps.map((c, i) => price(c + x.O[i]));
+          out.highs = steps.map((c, i) => price(Math.max(c, c + x.O[i]) + x.H[i]));
+          out.lows = steps.map((c, i) => price(Math.min(c, c + x.O[i]) - x.L[i]));
+          const unit = x.w > 0 ? x.w : 1;
+          out.volumes = x.V.map(v => v * unit);
+        }
+      } else out.closes = x.v.map(Number);
+      symbols[symbol] = out;
+    }
+    return { built: json.built || '', symbols };
+  };
+
+  /** Which market a symbol trades on, for the time of its scan: "th" (Thailand), "crypto", "futures" (=F and the
+   * dollar index), "fx" (=X) or "us" (the rest). */
+  C.marketOf = symbol => /\.BK$/.test(symbol) ? 'th' : /-USD$/.test(symbol) ? 'crypto'
+    : /=F$/.test(symbol) || symbol === 'DX-Y.NYB' ? 'futures' : /=X$/.test(symbol) ? 'fx' : 'us';
 
   const dayNumber = iso => Math.floor(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) / 86400000);
 
@@ -702,6 +751,7 @@ window.EMA = window.EMA || {};
 
   /**
    * The closes of one market around `nowMs`: `market` is {tz, close: "16:00", days: [0..6], 0 = Monday}.
+   * A close of "24:00" is the midnight that ends that day, so the session keeps the date of the bar it finishes.
    * Gives {last: {date, at}, next: {date, at}}: the latest close at or before now, and the first one after it.
    */
   C.sessions = (nowMs, market) => {

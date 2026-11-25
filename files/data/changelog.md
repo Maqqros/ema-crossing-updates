@@ -6,7 +6,15 @@ What changed in each version of EMA Crossing, newest first. In the app: Settings
 
 Finished 21 November 2026. Everything from 1.1 below is in it.
 
-Pack 9, 25 November 2026 (arrives on its own, nothing to install)
+Pack 10, 25 November 2026 (arrives on its own, nothing to install)
+
+- **More to scan: 632 symbols.** Besides the SET100 and the S&P 500, the scan now covers the **Nasdaq 100** and a **Major assets** list: gold, silver, WTI and Brent oil, the US dollar index, the dollar against the baht, euro, yen, pound, yuan, Swiss franc and Australian dollar, Bitcoin and Ethereum. Each is scanned once Yahoo counts its day as over: commodities and the dollar index after midnight New York time, currencies and crypto after midnight UTC (07:20 in Thailand).
+- **The scan's first run is light.** The update carries 5 years of daily prices (open, high, low, close and volume) for all 632 symbols, up to 24 November 2026, so the first scan only fetches the last month of each. The file is 15.5 MB, 5.7 MB as it travels compressed.
+- **A symbol without recent prices is shown, not scanned.** When Yahoo has nothing for a symbol in the 10 days before its market's latest close (a suspended or renamed share), the Scan tab lists it under "No recent prices" instead of showing its old crossings as recent.
+- A scan symbol's whole history is downloaded again once a month instead of every two weeks, spread over the month. A split or other change to past prices is still noticed at once.
+- Fixed: the crypto scan after midnight UTC looked for the day that had just begun instead of the one that had ended, so it could put off or skip its scan. **Scan now** was not affected.
+
+Pack 9, 25 November 2026 (arrived on its own, nothing to install)
 
 - **A new Scan tab: the screener.** The app looks through the SET100 and the S&P 500 (603 symbols, listed in the pack) for averages that crossed in the last few days, and lists what it found, newest first, with filters for each list and for up or down. Tap **+** to put a symbol on a watchlist with the crossing that found it, so its alerts start at once.
 - **It scans after each close, on each market's own clock**: Thai shares after the Thai close, US shares after the US close in New York time, so America's clock changes and early closes need nothing from you. Weekends are skipped; on a holiday it asks for one price, sees nothing new and stops. **Scan now** runs it straight away.

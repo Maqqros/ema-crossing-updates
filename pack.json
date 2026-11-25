@@ -1,11 +1,11 @@
 {
  "format": 1,
- "version": 9,
+ "version": 10,
  "name": "1.2",
  "minApi": 1,
- "notes": "A new Scan tab finds recent crossings in the SET100 and the S&P 500; Daily, Weekly and Hourly above every chart; lighter price checks.",
- "id": "22809029",
- "built": "25 Nov 2026 16:17",
+ "notes": "The scan now covers 632 symbols: the Nasdaq 100 and major assets (gold, silver, oil, currencies, Bitcoin) join the SET100 and S&P 500, and its first run starts from 5 years of prices in the update.",
+ "id": "18feb27c",
+ "built": "25 Nov 2026 17:29",
  "files": {
   "app.css": {
    "sha256": "a1eecd85fbcbb81e3de84c1e9a38bc41127d979b3248f0345f17748f292f8e55",
@@ -48,16 +48,20 @@
    "size": 1591
   },
   "data/catalog.json": {
-   "sha256": "9af2270829d25dc71ec6bcc83e8c933696b66e251b36b91917ad3c0f4efcb901",
-   "size": 4316
+   "sha256": "767bab9882e093ff655247f8f8eb0dcb4644662618ac2c18831a580881910b57",
+   "size": 4624
   },
   "data/changelog.md": {
-   "sha256": "afc54d95f50a29d11b4da91ddd490815bc9fb188d4dfd83548de65ed58b7867d",
-   "size": 13705
+   "sha256": "89aa0e1f37cfe0370975587ede9b13b5b3f667371f6fc5242550bb2ab0f11682",
+   "size": 15160
+  },
+  "data/scan-seed.json": {
+   "sha256": "81a33f9c9999395cfb80eb676ef03367235fc277e3b705d7ec336045d150e5b1",
+   "size": 15467148
   },
   "data/scan.txt": {
-   "sha256": "aa9c784d3dc77fc204dcef01371479d1122809486531499b685ac178c865dd4c",
-   "size": 11598
+   "sha256": "225feef7e1fdd8b98ea0196b0061d48d5e2be80c054a12ba129633c83196f2bc",
+   "size": 15147
   },
   "index.html": {
    "sha256": "8d1c4181065c81684d8201329218179cb9fc462a3b593deda61fb4d4ff22a366",
@@ -72,12 +76,12 @@
    "size": 21228
   },
   "js/check.js": {
-   "sha256": "f24189efc483c2005e528b7d5287c887143ed7471914917cabe04ad2d8f64525",
-   "size": 17119
+   "sha256": "9b06f1d5ea269b49f9a088d4a2ae72410da6effc61520c5a5d19dd1b98cccbe9",
+   "size": 17240
   },
   "js/core.js": {
-   "sha256": "7f33a32b7bc7080a279aa2ac56185525f0435199d72e213bda1917f841b21918",
-   "size": 35357
+   "sha256": "cb884025e1059b63cf3e3aed8b7765c52412d26ce585db68082e1710014f5f07",
+   "size": 38212
   },
   "js/data.js": {
    "sha256": "3da79a8cc799575454b9aee7db6c88aa1365f2bc4bc40c9daf6a06ea2acca852",
@@ -92,12 +96,12 @@
    "size": 21127
   },
   "js/scan.js": {
-   "sha256": "34b1e1bc1d9b419ad7b5bb65e48bc011ab57792d741a0586ea2e33acf01b5723",
-   "size": 17255
+   "sha256": "afcf898f9af2dc78bb686f9b7244d368af2415c561fc1a69f658f9f53824380a",
+   "size": 19554
   },
   "js/screens.js": {
-   "sha256": "0f8d7579bee5dba33b36d4818bdf03519e14785ba5643a0db9708bef19dcd8be",
-   "size": 64098
+   "sha256": "951ee786db840c2d442a83dcb4b269503245e4483d9b44fff76430b3d4ff1680",
+   "size": 64875
   },
   "js/ui.js": {
    "sha256": "234019f80748f8d9ee5f0375aac936c1098ff0f677b579c8da543a0563e475ea",

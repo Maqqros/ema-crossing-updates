@@ -69,13 +69,53 @@
     return Math.abs(x);
   };
 
-  /** Brings one symbol's saved prices up to date: a short top-up when possible, else the whole 5 years. */
+  // --- the starting history in the pack ---
+  // data/scan-seed.json holds 5 years of daily prices of every symbol on the list, downloaded on a PC
+  // (tools/make_scan_seed.py), so a phone's first scan only has to add the weeks since. Read once, when needed.
+  let seed;
+  Z.seed = async () => {
+    if (seed !== undefined) return seed;
+    seed = null;
+    if (!(EMA.pack && EMA.pack.files && EMA.pack.files['data/scan-seed.json'])) return seed;
+    try {
+      seed = C.readSeed(JSON.parse(await EMA.text('data/scan-seed.json')), false); // the scan keeps closes only
+    } catch (e) {
+      host.log('scan seed unreadable: ' + e);
+    }
+    return seed;
+  };
+  /** Lets the file be read again (after a new pack, or in a test). */
+  Z.forgetSeed = () => {
+    seed = undefined;
+  };
+
+  /** The short range that reaches back to `lastDate`: 1, 3 or 6 months, or null when only a full download will do. */
+  const reach = lastDate => {
+    const days = C.daysSince(lastDate);
+    return days <= 25 ? true : days <= 85 ? '3mo' : days <= 175 ? '6mo' : null;
+  };
+
+  /**
+   * Brings one symbol's saved prices up to date: a short top-up when possible, else the whole 5 years.
+   * A symbol with nothing saved starts from the pack's starting history when it has one.
+   */
   Z.update = async symbol => {
-    const saved = Z.bars(symbol);
-    const every = (cfg().fullEveryDays || 14) * DAY;
-    if (saved && saved.fullAt && Date.now() - saved.fullAt < every) {
+    let saved = Z.bars(symbol);
+    const every = (cfg().fullEveryDays || 30) * DAY;
+    let seeded = false;
+    if (!saved) {
+      const s = (await Z.seed()) || {};
+      const b = s.symbols && s.symbols[symbol];
+      // The first full downloads would otherwise all fall on one day: dating them back spreads them over a month.
+      if (b && b.closes.length) {
+        saved = C.bars(b.dates, b.closes, b.currency, { closeUtc: b.closeUtc, fullAt: Date.now() - (hash(symbol) % 30) * DAY });
+        seeded = true;
+      }
+    }
+    const range = saved && saved.closes.length ? reach(saved.dates[saved.dates.length - 1]) : null;
+    if (saved && saved.fullAt && range && Date.now() - saved.fullAt < every) {
       await slow().wait();
-      const r = await K.fetch(symbol, '1d', true);
+      const r = await K.fetch(symbol, '1d', range);
       const recent = C.bars(r.dates, r.closes, r.currency, { closeUtc: r.closeUtc, price: r.price, prev: r.prev, priceAt: r.priceAt, live: r.live });
       const merged = C.topUp(saved, recent);
       if (merged) {
@@ -85,8 +125,7 @@
     }
     await slow().wait();
     const bars = await K.fetch(symbol, '1d');
-    // The first downloads all happen on one day; dating some of them back spreads the later full downloads over two weeks.
-    const fullAt = saved ? Date.now() : Date.now() - (hash(symbol) % 14) * DAY;
+    const fullAt = saved && !seeded ? Date.now() : Date.now() - (hash(symbol) % 30) * DAY;
     if (bars.closes.length) host.set('scan:' + symbol, slim(bars, fullAt));
     return bars;
   };
@@ -99,11 +138,22 @@
     const rules = Z.activeRules();
     const before = Z.results();
     const seen = new Map(before.hits.map(x => [x.symbol + '|' + x.rule + '|' + x.date, x.seen]));
-    const hits = [];
+    const hits = [], stale = [];
+    const staleDays = cfg().staleDays || 10;
+    const sessions = {};
     for (const s of all.symbols) {
       const bars = Z.bars(s.symbol);
-      if (!bars) continue;
-      const market = (cfg().markets || {})[C.marketOf(s.symbol)] || {};
+      if (!bars || !bars.closes.length) continue;
+      const id = C.marketOf(s.symbol);
+      const market = (cfg().markets || {})[id] || {};
+      // A symbol whose newest price is well before its market's latest close (suspended, renamed, delisted) has
+      // no recent crossings to show, only old ones: it is listed as without recent prices instead.
+      const session = market.tz ? (sessions[id] || (sessions[id] = C.sessions(Date.now(), market).last)) : null;
+      const newest = bars.dates[bars.dates.length - 1];
+      if (session && newest < C.minusDays(session.date, staleDays)) {
+        stale.push({ symbol: s.symbol, name: s.name, lists: s.lists, last: newest });
+        continue;
+      }
       for (const x of C.scanHits(bars, rules, st.days, x0(st.days), C.today(), market.weekEnd || 4)) {
         const key = s.symbol + '|' + x.rule.id + '|' + x.date;
         const q = C.quoteOf(bars);
@@ -115,7 +165,7 @@
       }
     }
     hits.sort((p, q) => (p.date < q.date ? 1 : p.date > q.date ? -1 : p.symbol < q.symbol ? -1 : 1));
-    const out = { at: Date.now(), hits };
+    const out = { at: Date.now(), hits, stale };
     host.set('scanResults', out);
     // The very first results are all new; they are shown, but not announced.
     return { results: out, fresh: before.at ? hits.filter(x => !seen.has(x.symbol + '|' + x.rule + '|' + x.date)) : [] };

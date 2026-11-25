@@ -21,7 +21,8 @@
 
   /** Finished bars of one symbol from Yahoo Finance. Empty bars when the symbol has no prices yet (before a listing). */
   async function fetchOne(symbol, tf, short = false) {
-    const range = short ? ((EMA.catalog.recent || {})[tf] || '1mo') : (EMA.catalog.history || {})[tf] || '5y';
+    // `short` is true for the catalog's short range, or a range of its own ("3mo").
+    const range = typeof short === 'string' ? short : short ? ((EMA.catalog.recent || {})[tf] || '1mo') : (EMA.catalog.history || {})[tf] || '5y';
     let last = 'No price data';
     for (let attempt = 0; attempt < 3; attempt++) {
       const url = `https://${attempt % 2 === 0 ? 'query1' : 'query2'}.finance.yahoo.com/v8/finance/chart/` +

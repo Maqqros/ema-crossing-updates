@@ -53,12 +53,15 @@
     "markets": {
       "th": { "name": "Thailand", "tz": "Asia/Bangkok", "close": "16:30", "days": [0, 1, 2, 3, 4], "refs": ["^SET.BK", "PTT.BK", "ADVANC.BK"] },
       "us": { "name": "United States", "tz": "America/New_York", "close": "16:00", "days": [0, 1, 2, 3, 4], "refs": ["^GSPC", "SPY", "AAPL"] },
-      "crypto": { "name": "Crypto", "tz": "UTC", "close": "00:00", "days": [0, 1, 2, 3, 4, 5, 6], "refs": ["BTC-USD"], "weekEnd": 6 }
+      "crypto": { "name": "Crypto", "tz": "UTC", "close": "24:00", "days": [0, 1, 2, 3, 4, 5, 6], "refs": ["BTC-USD"], "weekEnd": 6 },
+      "futures": { "name": "Commodities", "tz": "America/New_York", "close": "24:00", "days": [0, 1, 2, 3, 4], "refs": ["GC=F", "CL=F", "SI=F"] },
+      "fx": { "name": "Currencies", "tz": "UTC", "close": "24:00", "days": [0, 1, 2, 3, 4], "refs": ["EURUSD=X", "USDJPY=X", "GBPUSD=X"] }
     },
     "perSecond": 2,
     "coolMinutes": 30,
     "afterCloseMinutes": 20,
-    "fullEveryDays": 14,
+    "fullEveryDays": 30,
+    "staleDays": 10,
     "runSeconds": 360,
     "rules": [
       { "kind": "ema", "fast": 50, "slow": 200, "tf": "1d", "on": true },
