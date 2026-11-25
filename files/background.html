@@ -9,22 +9,29 @@
 <script src="js/core.js"></script>
 <script src="js/data.js"></script>
 <script src="js/check.js"></script>
+<script src="js/scan.js"></script>
 <script>
 // The engine opens this page without a screen and says which job to do: "check" (prices, alerts, widgets and a
-// look at the update server) or "widgets" (redraw them from what is saved). It ends by reporting "ok" or "retry".
+// look at the update server), "widgets" (redraw them from what is saved), "scan:<market>" (the screener, after that
+// market's close) or "scan-note" (a scan notification that waited for the morning). It ends by reporting "ok" or "retry".
 (async () => {
   const host = EMA.host;
   let result = 'ok';
   try {
     await EMA.boot();
     host.ready();
-    if (host.info.job === 'widgets') EMA.check.widgets();
+    const job = host.info.job || 'check';
+    if (job === 'widgets') EMA.check.widgets();
+    else if (job.startsWith('scan:')) result = await EMA.scan.job(job.slice(5));
+    else if (job === 'scan-note') EMA.scan.deliverNote();
     else {
       const sent = await EMA.check.run();
       if (sent !== null && sent < 0) result = 'retry';
       // A newer pack is fetched in the background too. A failure here never fails the price check.
       const found = await EMA.check.update({ background: true });
       if (found && found.status === 'updated') host.emit('pack');
+      // The scans plan their own runs; this puts them back if Android dropped one.
+      await EMA.scan.schedule();
     }
   } catch (e) {
     host.log('background job failed: ' + e);

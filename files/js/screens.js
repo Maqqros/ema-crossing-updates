@@ -1,5 +1,5 @@
 'use strict';
-// The screens: the four tabs, the asset screen, adding an asset, reordering, the change log, an article,
+// The screens: the five tabs, the asset screen, adding an asset, reordering, the change log, an article,
 // and the choice of assets for a home-screen widget.
 (function (EMA) {
   const host = EMA.host, C = EMA.core, S = EMA.store, K = EMA.check, U = EMA.ui, M = EMA.model, h = U.h;
@@ -441,20 +441,234 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
     });
   }
 
-  // --- the four tabs ---
+  // --- the scan ---
+  const SCAN = 2; // the Scan tab's place in the bottom bar
+  V.SCAN = SCAN;
+  const scanFilter = { list: '', side: '' };
+
+  /** The name of a scan rule, as on the watchlist: "EMA 50 / 200", "Weekly RSI 30 / 70". */
+  const ruleName = r => C.assetLabel(C.ruleAsset(r));
+
+  /** When each market was last scanned, and what went wrong. */
+  function scanStatus() {
+    const sc = M.scan, cfg = EMA.catalog.scan || {};
+    const lines = [];
+    for (const market of Object.keys(cfg.markets || {})) {
+      const count = sc.list ? sc.list.symbols.filter(x => C.marketOf(x.symbol) === market).length : 0;
+      if (!count) continue;
+      const s = sc.state[market] || {};
+      const name = cfg.markets[market].name;
+      const failed = (s.failed || []).length;
+      let text;
+      if (s.cursor) text = `${name}: ${s.cursor} of ${count} scanned, carrying on soon`;
+      else if (s.holiday && s.day) text = `${name}: closed on ${C.niceDate(s.day)}, nothing new`;
+      else if (s.at) text = `${name}: ${s.scanned || count} symbols scanned ${C.stamp(s.at)}` + (failed ? ` · ${failed} could not be read` : '');
+      else text = `${name}: ${count} symbols, not scanned yet`;
+      lines.push(h('div', { class: 't-body-s muted', role: failed ? 'button' : null, onclick: failed ? () => failedDialog(name, s.failed) : null }, text));
+    }
+    return lines;
+  }
+
+  function failedDialog(name, failed) {
+    U.dialog(close => ({
+      title: `Not read · ${name}`,
+      body: h('div', { class: 't-body-m', style: 'max-height:50vh;overflow:auto' },
+        failed.map(f => h('div', { style: 'padding:4px 0' }, h('b', null, f.symbol), ' · ', h('span', { class: 'muted' }, f.error)))),
+      actions: [['Close', close]]
+    }));
+  }
+
+  function hitRow(x) {
+    const watched = M.assets.some(a => a.symbol === x.symbol && a.fast === x.fast && a.slow === x.slow && a.tf === x.tf && a.kind === x.kind);
+    const days = C.daysSince(x.date);
+    return h('div', { class: 'card tight', role: 'button', onclick: () => hitDialog(x) },
+      h('div', { class: 'hrow' },
+        h('div', { class: 'dot ' + (x.up ? 'up' : 'down') }, x.up ? '↑' : '↓'),
+        h('div', { class: 'grow', style: 'margin-left:12px;min-width:0' },
+          h('div', { class: 't-body-l one-line', style: 'font-weight:600' }, x.name === x.symbol ? x.symbol.replace(/\.BK$/, '') : x.name),
+          h('div', { class: 't-body-s muted one-line' }, x.symbol)),
+        x.trend && x.trend.length >= 2 ? U.spark(x.trend, x.trend[x.trend.length - 1] >= x.trend[0]) : null,
+        x.price != null ? h('div', { class: 'right', style: 'margin-left:8px' }, h('div', { class: 't-body-m', style: 'font-weight:600' }, C.money(x.price)),
+          x.change != null ? h('div', { class: 't-label-m ' + (x.change >= 0 ? 'up' : 'down') }, C.signed(x.change)) : null) : null,
+        watched ? h('div', { class: 'up', style: 'margin-left:4px', 'aria-label': 'On a watchlist with this crossing' }, U.icon('check'))
+          : U.iconBtn('add', `Add ${x.symbol} to a watchlist`, e => {
+            e.stopPropagation();
+            addHit(x);
+          }, { class: 'iconbtn primary' })),
+      h('div', { class: 't-body-s mt8' + (days <= 1 ? '' : ' muted') }, `${C.crossText(C.ruleAsset(x), x.up)} · ${C.barDate(x.date, x.tf, false)} · ${C.ago(x.date)}`));
+  }
+
+  /** Adds a found symbol to a watchlist: the one on screen when there is one list, else the user picks. */
+  function addHit(x) {
+    const label = x.name === x.symbol ? x.symbol.replace(/\.BK$/, '') : x.name;
+    const done = list => {
+      M.addFromScan(x, list.id);
+      U.toast(`Added ${label} to ${list.name} with ${ruleName(x)}.`);
+    };
+    if (M.lists.length === 1) return done(M.lists[0]);
+    U.dialog(close => ({
+      title: `Add ${label} to`,
+      body: h('div', { class: 'wrapflow' }, M.lists.map(l => U.chip(l.name, l.symbols.includes(x.symbol), () => {
+        close();
+        done(l);
+      }))),
+      actions: [['Cancel', close]]
+    }));
+  }
+
+  function hitDialog(x) {
+    const label = x.name === x.symbol ? x.symbol.replace(/\.BK$/, '') : x.name;
+    const watched = M.has(x.symbol);
+    U.dialog(close => ({
+      title: label,
+      body: h('div', null,
+        h('div', { class: 't-body-m muted' }, `${x.symbol} · on ${x.lists.join(', ')}`),
+        h('div', { class: 't-title-m mt12 ' + (x.up ? 'up' : 'down') }, (x.up ? '↑ ' : '↓ ') + C.crossText(C.ruleAsset(x), x.up)),
+        h('div', { class: 't-body-m mt4' }, `${C.barDate(x.date, x.tf)} · ${C.ago(x.date)} · close ${C.money(x.close)} ${x.currency || ''}`.trim()),
+        x.price != null ? h('div', { class: 't-body-m mt4' }, `Latest ${C.money(x.price)}` + (x.change != null ? ` (${C.signed(x.change)} on the day)` : '')) : null,
+        h('div', { class: 't-body-s muted mt12' }, watched
+          ? 'It is on a watchlist already. Adding it puts this crossing on it too.'
+          : 'Adding it puts it on a watchlist with this crossing, so you get alerts and the full chart from now on.')),
+      actions: [['Close', close], watched ? ['Open', () => {
+        close();
+        go('d:' + x.symbol);
+      }] : null, ['Add to watchlist', () => {
+        close();
+        addHit(x);
+      }]].filter(Boolean)
+    }));
+  }
+
+  function customRuleDialog() {
+    const digits = e => {
+      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 3);
+    };
+    const fast = h('input', { id: 'sfast', type: 'text', inputmode: 'numeric', oninput: digits });
+    const slow = h('input', { id: 'sslow', type: 'text', inputmode: 'numeric', oninput: digits });
+    let tf = '1d';
+    U.dialog((close, redraw) => ({
+      title: 'Your own EMA rule',
+      body: h('div', null,
+        h('div', { class: 't-body-m muted' }, 'The scan finds the symbols where the fast EMA crossed the slow one. Fast 1 means the price itself.'),
+        h('div', { class: 'mt12' }, U.seg([['1d', 'Daily'], ['1wk', 'Weekly']], tf, v => {
+          tf = v;
+          redraw();
+        })),
+        h('div', { class: 'hrow gap mt12', style: 'align-items:flex-start' },
+          h('label', { class: 'field grow' }, h('span', null, 'Fast EMA'), fast),
+          h('label', { class: 'field grow' }, h('span', null, 'Slow EMA'), slow))),
+      actions: [['Cancel', close], ['Add rule', () => {
+        const f = parseInt(fast.value, 10), sl = parseInt(slow.value, 10);
+        if (!M.addRule({ kind: 'ema', fast: f, slow: sl, tf })) return U.toast('The slow EMA must be longer than the fast one, up to 400.');
+        close();
+      }]]
+    }));
+  }
+
+  /** The rules the scan looks for, which to show, and the scan's own switches. */
+  function scanRules() {
+    const sc = M.scan.settings || EMA.scan.settings();
+    const cfg = EMA.catalog.scan || {};
+    const presets = new Set((cfg.rules || []).map(C.ruleId));
+    return U.card(null,
+      h('div', { class: 't-title-m' }, 'What the scan looks for'),
+      h('div', { class: 't-body-s muted mt4' }, 'Tap a rule to turn it on or off. Changes show at once, from the prices already saved.'),
+      h('div', { class: 'wrapflow mt12' }, sc.rules.map((r, i) => {
+        const chip = U.chip(ruleName(r), r.on, () => M.toggleRule(i));
+        if (!presets.has(C.ruleId(r))) {
+          chip.appendChild(h('span', {
+            class: 'muted', style: 'margin-left:6px', role: 'button', 'aria-label': 'Remove this rule', onclick: e => {
+              e.stopPropagation();
+              M.removeRule(i);
+            }
+          }, '×'));
+        }
+        return chip;
+      }), U.chip('Your own', false, customRuleDialog, 'add')),
+      h('div', { class: 't-body-s muted mt8' }, 'EMA 50 / 200 is the golden and death cross. RSI finds the RSI leaving 30 to 70; MACD finds it crossing its signal line. Weekly rules use each finished week.'),
+      h('div', { class: 't-title-s mt16' }, 'Recent means'),
+      h('div', { class: 'mt8' }, U.seg((cfg.days || [1, 3, 5, 10]).map(d => [d, d === 1 ? 'Last day' : `${d} days`]), sc.days, days => M.setScan({ days }))),
+      h('div', { class: 't-body-s muted mt6' }, 'Trading days. Weekly rules look back over the same span in weeks, at least one.'),
+      h('div', { class: 'mt12' }, U.switchRow('Notification after a scan', `When it finds new crossings. One that would arrive in the night waits until ${String(cfg.noticeHour == null ? 7 : cfg.noticeHour).padStart(2, '0')}:00.`, sc.notify, notify => M.setScan({ notify }))),
+      h('div', { class: 'mt4' }, U.switchRow('Scan after each close', 'Thai shares after the Thai close, US shares after the US close, on each market\'s own clock. Weekends and holidays are skipped.', sc.scanOn, scanOn => M.setScan({ scanOn }))));
+  }
+
+  function scanTab(wrap) {
+    const sc = M.scan;
+    if (!sc.list) {
+      M.reloadScan();
+      return h('div', { class: 'body' });
+    }
+    if (sc.running) wrap.appendChild(h('div', { class: 'progress' }));
+    const hits = sc.results.hits || [];
+    const lists = sc.list.lists.map(l => l.name);
+    const shown = hits.filter(x => (!scanFilter.list || x.lists.includes(scanFilter.list)) && (!scanFilter.side || (scanFilter.side === 'up') === x.up));
+    const kids = [];
+    kids.push(h('div', null, sc.running
+      ? h('div', { class: 't-body-m' }, `Scanning… ${sc.done} of ${sc.total}`)
+      : scanStatus()));
+    if (sc.list.skipped.length) {
+      kids.push(h('div', { class: 't-body-s err' }, `${sc.list.skipped.length} line${sc.list.skipped.length === 1 ? '' : 's'} of the list could not be read: ` +
+        sc.list.skipped.slice(0, 3).map(x => `line ${x.line} (${x.why})`).join(', ')));
+    }
+    kids.push(h('div', { class: 'wrapflow' },
+      U.chip('All', !scanFilter.list, () => {
+        scanFilter.list = '';
+        EMA.draw();
+      }), lists.map(n => U.chip(n, scanFilter.list === n, () => {
+        scanFilter.list = n;
+        EMA.draw();
+      })),
+      U.chip('↑ Up', scanFilter.side === 'up', () => {
+        scanFilter.side = scanFilter.side === 'up' ? '' : 'up';
+        EMA.draw();
+      }),
+      U.chip('↓ Down', scanFilter.side === 'down', () => {
+        scanFilter.side = scanFilter.side === 'down' ? '' : 'down';
+        EMA.draw();
+      })));
+    if (!sc.results.at) {
+      kids.push(U.empty('No scan yet', `The first scan downloads 5 years of prices for ${sc.list.symbols.length} symbols, about 20 to 30 MB, in about 5 minutes. ` +
+        'After that each scan takes only the latest prices. It also runs by itself after each market closes.', U.btn(sc.running ? 'Scanning…' : 'Scan now', M.scanNow, '', sc.running)));
+    } else if (!shown.length) {
+      kids.push(U.empty('No recent crossings', hits.length ? 'None match these filters.' : 'None of the symbols crossed in that span. Try a longer span or more rules below.'));
+    } else {
+      kids.push(h('div', { class: 'listhead' }, `${shown.length} recent crossing${shown.length === 1 ? '' : 's'}`));
+      for (const x of shown.slice(0, 200)) kids.push(hitRow(x));
+      if (shown.length > 200) kids.push(h('div', { class: 't-body-s muted center' }, `And ${shown.length - 200} more. Narrow it down with the filters.`));
+    }
+    kids.push(scanRules());
+    const kb = Math.round(EMA.scan.size() / 1024);
+    kids.push(U.card(null, h('div', { class: 't-title-m' }, 'Saved for the scan'),
+      h('div', { class: 't-body-m muted mt4' }, `${kb >= 1024 ? (kb / 1024).toFixed(1) + ' MB' : kb + ' KB'} of prices on this phone. Clearing them means the next scan downloads 5 years again.`),
+      h('div', { class: 'mt8' }, U.btn('Clear', () => U.dialog(close => ({
+        title: 'Clear the scan?',
+        body: h('div', { class: 't-body-m muted' }, 'Its saved prices and results are deleted. Your watchlists are not touched.'),
+        actions: [['Keep', close], ['Clear', () => {
+          close();
+          M.clearScan();
+        }, 'danger']]
+      })), 'outline', sc.running))));
+    kids.push(h('div', { class: 't-body-s muted' }, 'The scan describes what prices did. It is not advice to buy or sell.'));
+    return h('div', { class: 'body list tight', 'data-keep': 'scan' }, kids);
+  }
+
+  // --- the five tabs ---
   V.home = () => {
     const tab = st.tab;
     const wrap = h('div', { class: 'wrap' });
-    const body = tab === 0 ? watchlist(wrap) : tab === 1 ? alerts() : tab === 2 ? articles() : settings();
+    const body = tab === 0 ? watchlist(wrap) : tab === 1 ? alerts() : tab === SCAN ? scanTab(wrap) : tab === 3 ? articles() : settings();
     if (tab === 0 && M.checking) wrap.appendChild(h('div', { class: 'progress' }));
     wrap.appendChild(body);
     if (tab === 0) wrap.appendChild(h('button', { class: 'fab', onclick: () => go('add') }, U.icon('add'), 'Add asset'));
-    const tabs = [['list', 'Watchlist'], ['bell', 'Alerts'], ['info', 'Articles'], ['settings', 'Settings']];
+    const tabs = [['list', 'Watchlist'], ['bell', 'Alerts'], ['search', 'Scan'], ['info', 'Articles'], ['settings', 'Settings']];
     return h('div', { class: 'screen' },
       h('div', { class: 'top' },
         h('div', { class: 'titles' }, h('div', { class: 't-headline one-line' }, tab === 0 ? M.list().name : tabs[tab][1]),
-          tab === 0 ? h('div', { class: 't-body-s muted' }, C.checkedText(M.lastChecked)) : null),
-        tab === 0 ? U.iconBtn('refresh', 'Check prices now', () => M.refresh(false), { disabled: M.checking }) : null,
+          tab === 0 ? h('div', { class: 't-body-s muted' }, C.checkedText(M.lastChecked)) : null,
+          tab === SCAN && M.scan.list ? h('div', { class: 't-body-s muted' }, `${M.scan.list.symbols.length} symbols · ${M.scan.list.lists.map(l => l.name).join(', ')}`) : null),
+        tab === 0 ? U.iconBtn('refresh', 'Check prices now', () => M.refresh(false), { disabled: M.checking || M.scan.running }) : null,
+        tab === SCAN ? U.iconBtn('refresh', 'Scan now', M.scanNow, { disabled: M.scan.running || M.checking }) : null,
         tab === 0 ? U.iconBtn('more', 'More', e => U.menu(e.currentTarget, [
           ['Reorder or move assets', () => go('order')], ['New watchlist', () => listNameDialog(null)], ['Rename this watchlist', () => listNameDialog(M.list())]]
           .concat(M.lists.length > 1 ? [['Delete this watchlist', () => deleteListDialog(M.list())]] : []))) : null),
@@ -784,18 +998,34 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
     if (quote) kids.push(priceHeader(quote));
     if (derived) kids.push(h('div', { class: 't-body-s muted', style: 'margin-bottom:12px' }, derived.note));
     if (M.settings.details) kids.push(daySummary(M.barsOf(symbol)));
-    if (has) {
-      const key = symbol + '|' + asset.tf;
-      kids.push(EMA.chart(bars, asset, st.charts[key] || (st.charts[key] = {})));
+    // The chart's timeframe: the chosen crossing's, unless another one is picked to look at.
+    const view = d.view || asset.tf;
+    const onChart = view === asset.tf ? asset
+      : g.items.find(a => a.tf === view && a.kind === 'ema') || g.items.find(a => a.tf === view)
+      || C.asset({ id: 'view', name: g.name, symbol, fast: 50, slow: 200, tf: view });
+    const viewBars = M.barsOf(symbol, view);
+    const viewState = M.viewState(symbol, view);
+    if (!M.watched(symbol, view)) M.loadView(symbol, view);
+    kids.push(h('div', { style: 'margin-bottom:8px' }, U.seg(cat.frames, view, tf => {
+      d.view = tf;
+      EMA.draw();
+    })));
+    if (viewBars && viewBars.closes.length >= 2) {
+      const key = symbol + '|' + view;
+      kids.push(EMA.chart(viewBars, onChart, st.charts[key] || (st.charts[key] = {})));
+      if (onChart.id === 'view') kids.push(h('div', { class: 't-body-s muted mt8' }, `No ${C.tfWord(view)} crossing is watched on ${g.name}, so the chart shows EMA 50 / 200 and you get no alerts from it.`));
+    } else if (waiting) {
+      kids.push(U.card(null, U.empty('Not trading yet', `No prices exist for ${symbol}. You'll get an alert on its first trading day, and the chart starts then.`)));
+    } else if (viewState && viewState.failed) {
+      kids.push(U.card(null, U.empty(`Couldn't load ${C.tfWord(view)} prices`, 'Check your connection, then pick the timeframe again.')));
     } else {
-      kids.push(U.card(null, waiting
-        ? U.empty('Not trading yet', `No prices exist for ${symbol}. You'll get an alert on its first trading day, and the chart starts then.`)
-        : U.empty(`Loading ${C.tfWord(asset.tf)} prices…`, 'If nothing appears, go back and pull down on the watchlist to refresh.')));
+      kids.push(U.card(null, U.empty(`Loading ${C.tfWord(view)} prices…`, M.watched(symbol, view) ? 'If nothing appears, go back and pull down on the watchlist to refresh.' : 'This takes a moment the first time.')));
     }
 
     kids.push(h('div', { class: 'section' }, 'Crossings you are alerted on'),
       h('div', { class: 'list tight' }, g.items.map(a => crossingRow(a, M.entryOf(a), a.id === asset.id, g.items.length > 1, () => {
         d.selected = a.id;
+        d.view = null; // the chart follows the crossing picked
         EMA.draw();
       }))));
     if (has) kids.push(trackRecord(bars, asset));
@@ -836,7 +1066,7 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
     }
     return h('div', { class: 'screen' },
       U.subTop(g.name, () => go('home'), g.symbol, [U.iconBtn('move', 'Move to another watchlist', () => moveDialog(g)), U.iconBtn('edit', 'Rename', () => renameDialog(g)), U.iconBtn('delete', 'Remove asset', () => removeDialog(g))]),
-      h('div', { class: 'body end', style: 'padding-bottom:calc(32px + var(--ib))', 'data-keep': 'd:' + symbol }, kids));
+      h('div', { class: 'body end', style: 'padding-bottom:calc(32px + var(--ibx))', 'data-keep': 'd:' + symbol }, kids));
   };
 
   // --- choosing the assets of a home-screen widget ---
@@ -873,7 +1103,7 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
       h('div', { class: 'top' }, h('div', { class: 'titles' }, h('div', { class: 't-title-l' }, single ? 'Choose an asset' : 'Choose assets'))),
       h('div', { class: 't-body-m muted', style: 'padding:8px 16px' }, single ? 'This widget shows one asset.' : 'This widget shows only the assets you tick. Each widget keeps its own list.'),
       h('div', { class: 'body', style: 'padding:0 0 16px', 'data-keep': 'widget' }, rows),
-      h('div', { style: 'padding:16px 16px calc(16px + var(--ib))' }, h('button', {
+      h('div', { style: 'padding:16px 16px calc(16px + var(--ibx))' }, h('button', {
         class: 'btn', style: 'width:100%', disabled: single && chosen.size === 0, onclick: () => {
           S.setWidgetSymbols(info.id, assets.map(g => g.symbol).filter(s => chosen.has(s)));
           K.widgets();

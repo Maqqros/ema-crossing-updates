@@ -518,8 +518,209 @@ window.EMA = window.EMA || {};
     });
   };
 
+  /**
+   * Adds the bars of a short, recent download (`recent`) to the history kept on the phone (`saved`). Gives null when
+   * the two do not fit together, and the whole history must be downloaded again instead: nothing saved, nothing
+   * recent, a gap between them, a different currency or set of columns, or a close on a shared date that changed
+   * (a split, a dividend adjustment or a correction rewrites past prices). The newest price and session come from `recent`.
+   */
+  C.topUp = (saved, recent, tolerance = 0.001) => {
+    if (!saved || !recent || !saved.closes.length || !recent.closes.length) return null;
+    if (saved.currency !== recent.currency || C.full(saved) !== C.full(recent)) return null;
+    const first = recent.dates[0];
+    const lastSaved = saved.dates[saved.dates.length - 1];
+    if (first > lastSaved) return null; // a gap: some bars would be missing
+    let shared = 0;
+    const at = new Map(saved.dates.map((d, i) => [d, i]));
+    for (let i = 0; i < recent.dates.length; i++) {
+      const j = at.get(recent.dates[i]);
+      if (j == null) continue;
+      shared++;
+      const a = saved.closes[j], b = recent.closes[i];
+      if (Math.abs(a - b) > tolerance * Math.max(Math.abs(a), Math.abs(b), 1e-9)) return null;
+    }
+    if (!shared) return null;
+    const keep = saved.dates.findIndex(d => d >= first);
+    const head = keep < 0 ? saved.dates.length : keep;
+    const join = name => saved[name].slice(0, head).concat(recent[name]);
+    const full = C.full(saved);
+    return C.bars(join('dates'), join('closes'), recent.currency, {
+      closeUtc: recent.closeUtc, price: recent.price, prev: recent.prev, priceAt: recent.priceAt, live: recent.live, day: recent.day,
+      opens: full ? join('opens') : [], highs: full ? join('highs') : [], lows: full ? join('lows') : [], volumes: full ? join('volumes') : []
+    });
+  };
+
   /** True during quiet hours that run from `from` o'clock until `to` o'clock. They may run past midnight (22 to 7). */
   C.quiet = (hour, from, to) => from === to ? false : from < to ? hour >= from && hour < to : hour >= from || hour < to;
+
+  // --- the screener ---------------------------------------------------------------------------------
+
+  /**
+   * A speed limit: `wait()` resolves when the next request may start, never more than `perSec` a second.
+   * `pause(ms)` holds every request back for a while (after the price source says "too many requests").
+   * `now` and `sleep` are passed in so the tests can run it on a made-up clock.
+   */
+  C.pacer = (perSec, now = () => Date.now(), sleep = ms => new Promise(done => setTimeout(done, ms))) => {
+    const gap = 1000 / Math.max(0.1, perSec);
+    let next = 0;
+    return {
+      wait: async () => {
+        const t = now();
+        const at = Math.max(t, next);
+        next = at + gap;
+        if (at > t) await sleep(at - t);
+      },
+      pause: ms => {
+        next = Math.max(next, now() + ms);
+      }
+    };
+  };
+
+  const SCAN_SYMBOL = /^[A-Z0-9][A-Z0-9.^=&-]{0,19}$|^\^[A-Z0-9.]{1,19}$/;
+
+  /**
+   * Reads the screener's list file: one symbol per line, Yahoo's spelling, with an optional name after a comma.
+   * "[Name]" starts a named list, "#" starts a note. Gives {lists: [{name, items: [{symbol, name}]}],
+   * symbols: [{symbol, name, lists}] (each symbol once), skipped: [{line, text, why}]}. Stops at `most` symbols.
+   */
+  C.parseScanList = (text, most = 1000) => {
+    const lists = [], skipped = [], by = new Map();
+    let current = null;
+    String(text || '').split(/\r?\n/).forEach((raw, i) => {
+      const line = raw.replace(/#.*$/, '').trim();
+      if (!line) return;
+      const head = /^\[(.+)\]$/.exec(line);
+      if (head) {
+        current = { name: head[1].trim(), items: [] };
+        lists.push(current);
+        return;
+      }
+      const cut = line.indexOf(',');
+      const symbol = (cut < 0 ? line : line.slice(0, cut)).trim().toUpperCase();
+      const name = cut < 0 ? '' : line.slice(cut + 1).trim();
+      if (!SCAN_SYMBOL.test(symbol)) return skipped.push({ line: i + 1, text: raw.trim(), why: 'not a symbol' });
+      if (!current) {
+        current = { name: 'List', items: [] };
+        lists.push(current);
+      }
+      let s = by.get(symbol);
+      if (!s) {
+        if (by.size >= most) return skipped.push({ line: i + 1, text: raw.trim(), why: `more than ${most} symbols` });
+        s = { symbol, name: name || symbol, lists: [] };
+        by.set(symbol, s);
+      } else if (name && s.name === symbol) s.name = name;
+      if (!current.items.some(x => x.symbol === symbol)) current.items.push({ symbol, name: name || symbol });
+      if (!s.lists.includes(current.name)) s.lists.push(current.name);
+    });
+    return { lists: lists.filter(l => l.items.length), symbols: Array.from(by.values()), skipped };
+  };
+
+  /** Which market a symbol trades on, for the time of its scan: "th" (Thailand), "crypto" or "us" (the rest). */
+  C.marketOf = symbol => /\.BK$/.test(symbol) || symbol === '^SET.BK' ? 'th' : /-USD$/.test(symbol) ? 'crypto' : 'us';
+
+  const dayNumber = iso => Math.floor(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) / 86400000);
+
+  /**
+   * Weekly bars made from daily ones: the last close of each week, labelled with its Monday, as Yahoo labels them.
+   * The latest week counts only once it is over: its last day is `weekEnd` (4 = Friday; 6 = Sunday for crypto) or later,
+   * or it is not this week.
+   */
+  C.weekly = (daily, today = C.today(), weekEnd = 4) => {
+    const dates = [], closes = [];
+    let lastDay = null;
+    for (let i = 0; i < daily.dates.length; i++) {
+      const n = dayNumber(daily.dates[i]);
+      const monday = n - mod(n + 3, 7);
+      const label = new Date(monday * 86400000).toISOString().slice(0, 10);
+      if (dates.length && dates[dates.length - 1] === label) closes[closes.length - 1] = daily.closes[i];
+      else {
+        dates.push(label);
+        closes.push(daily.closes[i]);
+      }
+      lastDay = n;
+    }
+    if (dates.length && lastDay != null) {
+      const weekday = mod(lastDay + 3, 7); // 0 = Monday
+      const sameWeek = dayNumber(today) - mod(dayNumber(today) + 3, 7) === dayNumber(dates[dates.length - 1]);
+      if (weekday < weekEnd && sameWeek) {
+        dates.pop();
+        closes.pop();
+      }
+    }
+    return C.bars(dates, closes, daily.currency);
+  };
+
+  /** A scan rule as a watched crossing, so the same rules and words are used: {kind, fast, slow, tf}. */
+  C.ruleAsset = (rule, symbol = '', name = '') => C.asset({ id: rule.id || C.ruleId(rule), name, symbol, fast: rule.fast, slow: rule.slow, tf: rule.tf, kind: rule.kind });
+  C.ruleId = r => `${r.kind}-${r.fast}-${r.slow}-${r.tf}`;
+
+  /**
+   * The crossings of the scan rules in one symbol's daily history that happened in its last `withinBars` bars
+   * (weekly rules: its last `withinWeeks` weeks). Gives [{rule, up, date, close}], the latest crossing per rule.
+   */
+  C.scanHits = (daily, rules, withinBars = 5, withinWeeks = 1, today = C.today(), weekEnd = 4) => {
+    const out = [];
+    if (!daily || daily.closes.length < 2) return out;
+    let week = null;
+    for (const rule of rules) {
+      const bars = rule.tf === '1wk' ? (week || (week = C.weekly(daily, today, weekEnd))) : daily;
+      const a = C.ruleAsset(rule);
+      if (bars.closes.length < C.need(a)) continue;
+      const crosses = C.crosses(a, bars.closes);
+      const last = crosses[crosses.length - 1];
+      if (!last || last.index < bars.closes.length - (rule.tf === '1wk' ? withinWeeks : withinBars)) continue;
+      out.push({ rule, up: last.up, date: bars.dates[last.index], close: bars.closes[last.index] });
+    }
+    return out;
+  };
+
+  // Market clocks. Each market's close is kept in its own time zone, so clock changes there move it by themselves.
+  const zoneFormat = new Map();
+  /** The wall-clock time in time zone `tz` at the moment `ms`: {y, m, d, hh, mm, weekday (0 = Monday)}. */
+  C.zoneParts = (ms, tz) => {
+    let f = zoneFormat.get(tz);
+    if (!f) {
+      f = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', weekday: 'short' });
+      zoneFormat.set(tz, f);
+    }
+    const p = {};
+    for (const x of f.formatToParts(new Date(ms))) p[x.type] = x.value;
+    return { y: +p.year, m: +p.month, d: +p.day, hh: +p.hour % 24, mm: +p.minute, weekday: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(p.weekday) };
+  };
+  /** The moment, in ms, when the clock in `tz` shows y-m-d hh:mm. */
+  C.zoneTime = (tz, y, m, d, hh, mm) => {
+    const want = Date.UTC(y, m - 1, d, hh, mm);
+    let t = want;
+    for (let i = 0; i < 3; i++) {
+      const p = C.zoneParts(t, tz);
+      const shown = Date.UTC(p.y, p.m - 1, p.d, p.hh, p.mm);
+      if (shown === want) break;
+      t += want - shown;
+    }
+    return t;
+  };
+
+  /**
+   * The closes of one market around `nowMs`: `market` is {tz, close: "16:00", days: [0..6], 0 = Monday}.
+   * Gives {last: {date, at}, next: {date, at}}: the latest close at or before now, and the first one after it.
+   */
+  C.sessions = (nowMs, market) => {
+    const [hh, mm] = market.close.split(':').map(Number);
+    const days = market.days || [0, 1, 2, 3, 4];
+    const p = C.zoneParts(nowMs, market.tz);
+    const base = Date.UTC(p.y, p.m - 1, p.d);
+    let last = null, next = null;
+    for (let k = -8; k <= 8 && !next; k++) {
+      const day = new Date(base + k * 86400000);
+      const weekday = mod(Math.floor(day.getTime() / 86400000) + 3, 7);
+      if (!days.includes(weekday)) continue;
+      const at = C.zoneTime(market.tz, day.getUTCFullYear(), day.getUTCMonth() + 1, day.getUTCDate(), hh, mm);
+      const item = { date: day.toISOString().slice(0, 10), at };
+      if (at <= nowMs) last = item;
+      else next = item;
+    }
+    return { last, next };
+  };
 
   EMA.core = C;
 })(window.EMA);

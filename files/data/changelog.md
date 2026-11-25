@@ -6,7 +6,20 @@ What changed in each version of EMA Crossing, newest first. In the app: Settings
 
 Finished 21 November 2026. Everything from 1.1 below is in it.
 
-Pack 8, 25 November 2026 (arrives on its own, nothing to install)
+Pack 9, 25 November 2026 (arrives on its own, nothing to install)
+
+- **A new Scan tab: the screener.** The app looks through the SET100 and the S&P 500 (603 symbols, listed in the pack) for averages that crossed in the last few days, and lists what it found, newest first, with filters for each list and for up or down. Tap **+** to put a symbol on a watchlist with the crossing that found it, so its alerts start at once.
+- **It scans after each close, on each market's own clock**: Thai shares after the Thai close, US shares after the US close in New York time, so America's clock changes and early closes need nothing from you. Weekends are skipped; on a holiday it asks for one price, sees nothing new and stops. **Scan now** runs it straight away.
+- **You choose what it looks for.** EMA 50 / 200 daily and weekly are on to start; turn on EMA 20 / 50, price and EMA 200, EMA 12 / 26, RSI 30 / 70, MACD or weekly EMA 20 / 50, or add your own EMA pair. Choose how recent: the last day, 3, 5 or 10 trading days. Changes show at once, from prices already on the phone.
+- **The first scan downloads 5 years of prices once** (about 20 to 30 MB, roughly 5 minutes); after that each scan takes only the last month, about 1 to 2 MB. The scan keeps closing prices only, about 15 MB, and **Clear** removes them.
+- **A notification when a scan finds new crossings.** One that would arrive in the night waits until 07:00. It can be switched off on the Scan tab.
+- **Gentle on Yahoo.** The scan asks for at most 2 prices a second, and the whole app never more than 5. When Yahoo asks the app to slow down, everything waits a minute; after three refusals in a row the scan rests for half an hour, and nothing (opening the app, a price check) starts it again sooner. A price check that comes while a scan runs is done right after it.
+
+- **Daily, Weekly and Hourly above every chart.** Switch the chart of any asset between daily, weekly and hourly prices, even without a crossing on that timeframe. Without one, the chart shows EMA 50 / 200 and no alerts come from it. Tapping a crossing below puts the chart back on that crossing's timeframe.
+- Fixed: on some phones the bottom of the app (the tab bar, buttons at the bottom of a screen, an article's end) sat under the phone's own Back and Home buttons. The app now asks the phone for the height of its buttons again after starting and each time it is opened, and falls back on the browser's own safe area.
+- **Price checks use much less data.** The app keeps the price history it already has and downloads only the last few weeks, adding them on. Once a week, or when past prices change (after a split or a dividend adjustment), it downloads the whole history again so the chart stays right. Alerts work exactly as before.
+
+Pack 8, 25 November 2026 (arrived on its own, nothing to install)
 
 - **The watchlist tabs are always at the top**, even with one list, and stay there while you scroll. **New list** sits beside them.
 - **Drop a card on a tab** at the top to move it to that list, as well as on the bar at the bottom.

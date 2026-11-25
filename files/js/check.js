@@ -7,15 +7,28 @@
   const UA = 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36';
   const sleep = ms => new Promise(done => setTimeout(done, ms));
   const yahoo = { 'User-Agent': UA, Accept: 'application/json' };
+  // Never more than 5 requests a second to Yahoo, from the price check, the scan and search alike.
+  // Each running copy of the pack has its own pacer, so the price check and the scan share a lock and never overlap.
+  const pacer = C.pacer(5);
+  K.pacer = pacer;
+  /** An error from the price source saying "too many requests". Every request waits a minute after one. */
+  const throttled = () => {
+    pacer.pause(60000);
+    const e = new Error('The price source asked the app to slow down');
+    e.throttled = true;
+    return e;
+  };
 
   /** Finished bars of one symbol from Yahoo Finance. Empty bars when the symbol has no prices yet (before a listing). */
-  async function fetchOne(symbol, tf) {
-    const range = (EMA.catalog.history || {})[tf] || '5y';
+  async function fetchOne(symbol, tf, short = false) {
+    const range = short ? ((EMA.catalog.recent || {})[tf] || '1mo') : (EMA.catalog.history || {})[tf] || '5y';
     let last = 'No price data';
     for (let attempt = 0; attempt < 3; attempt++) {
       const url = `https://${attempt % 2 === 0 ? 'query1' : 'query2'}.finance.yahoo.com/v8/finance/chart/` +
         `${encodeURIComponent(symbol)}?range=${range}&interval=${tf}&includePrePost=false`;
+      await pacer.wait();
       const r = await host.call('http', { url, headers: yahoo, timeoutMs: 20000 });
+      if (r.ok && r.status === 429) throw throttled();
       try {
         if (!r.ok) throw new Error(r.error || 'No connection');
         if (r.status === 404) return C.bars([], []);
@@ -30,17 +43,18 @@
   }
 
   /** One series: straight from Yahoo, or one the app works out itself from two of them (see "derived" in the catalog). */
-  K.fetch = async (symbol, tf = '1d') => {
+  K.fetch = async (symbol, tf = '1d', short = false) => {
     const d = (EMA.catalog.derived || {})[symbol];
-    if (!d) return fetchOne(symbol, tf);
-    const base = await fetchOne(d.base, tf);
+    if (!d) return fetchOne(symbol, tf, short);
+    const base = await fetchOne(d.base, tf, short);
     // Hourly bars of two markets carry different local clocks, so they are priced with each day's rate.
-    const rate = await fetchOne(d.rate, tf === '1h' ? '1d' : tf);
+    const rate = await fetchOne(d.rate, tf === '1h' ? '1d' : tf, short);
     return C.combine(base, rate, d.factor, d.currency);
   };
 
   /** Looks an asset up by name or symbol: [{symbol, name, detail}]. Throws when the search cannot be reached. */
   K.search = async query => {
+    await pacer.wait();
     const r = await host.call('http', {
       url: 'https://query1.finance.yahoo.com/v1/finance/search?q=' + encodeURIComponent(query) + '&quotesCount=12&newsCount=0&listsCount=0',
       headers: yahoo, timeoutMs: 15000
@@ -55,6 +69,26 @@
     return out;
   };
 
+  /**
+   * The price history of one symbol: the saved one topped up with a short download of the latest bars. The whole
+   * history is downloaded again when nothing is saved, once it is a week old (catalog "fullEveryDays"), or when the
+   * latest bars do not fit the saved ones (see C.topUp). `fullAt` records when it was last downloaded whole.
+   */
+  K.history = async (symbol, tf) => {
+    const saved = S.bars(symbol, tf);
+    const days = EMA.catalog.fullEveryDays || 7;
+    if (saved && saved.fullAt && Date.now() - saved.fullAt < days * 86400000) {
+      const merged = C.topUp(saved, await K.fetch(symbol, tf, true));
+      if (merged) {
+        merged.fullAt = saved.fullAt;
+        return merged;
+      }
+    }
+    const bars = await K.fetch(symbol, tf);
+    bars.fullAt = Date.now();
+    return bars;
+  };
+
   /** Downloads every wanted "symbol|tf", four at a time, and saves what arrives. Gives {bars} or {error} for each. */
   async function download(wanted) {
     const got = new Map();
@@ -65,7 +99,7 @@
         const cut = key.lastIndexOf('|');
         const symbol = key.slice(0, cut), tf = key.slice(cut + 1);
         try {
-          const bars = await K.fetch(symbol, tf);
+          const bars = await K.history(symbol, tf);
           S.saveBars(symbol, tf, bars);
           got.set(key, { bars });
         } catch (e) {
@@ -94,12 +128,12 @@
   }
 
   /** Shows an alert now, or keeps it until quiet hours end. */
-  function deliver(title, body, route) {
+  const deliver = K.deliver = (title, body, route) => {
     if (quietNow()) {
       S.hold({ title, body, route });
       scheduleQuietEnd();
     } else host.notify({ title, body, route });
-  }
+  };
 
   /** Shows what was kept during quiet hours, once they are over. */
   K.flushHeld = () => {
@@ -155,7 +189,12 @@
    * another copy of the pack is already checking.
    */
   K.run = async () => {
-    if (!host.lock('check')) return null;
+    if (!host.lock('check')) {
+      // Another copy is checking, or a scan is running: the scan runs this check as soon as it ends (see scan.js).
+      host.set('checkWaiting', true);
+      return null;
+    }
+    host.remove('checkWaiting');
     try {
       K.flushHeld();
       const assets = S.assets();

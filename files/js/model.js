@@ -48,7 +48,39 @@
   M.onList = symbol => M.list().symbols.includes(symbol);
   /** The watchlists an asset is on. */
   M.listsOf = symbol => M.lists.filter(l => l.symbols.includes(symbol));
-  M.barsOf = (symbol, tf = '1d') => M.bars.get(symbol + '|' + tf) || null;
+  M.barsOf = (symbol, tf = '1d') => {
+    const key = symbol + '|' + tf;
+    if (!M.bars.has(key)) M.bars.set(key, S.bars(symbol, tf)); // prices kept only for viewing are read when first asked for
+    return M.bars.get(key) || null;
+  };
+
+  /** True when a crossing on the watchlist uses this symbol and timeframe, so every check keeps its prices fresh. */
+  M.watched = (symbol, tf) => tf === '1d' || M.assets.some(a => a.symbol === symbol && a.tf === tf);
+  const viewing = new Map(); // "symbol|tf" → {busy, at, failed}
+  /** How the prices of a timeframe that is only looked at are coming along: null, or {busy, failed}. */
+  M.viewState = (symbol, tf) => viewing.get(symbol + '|' + tf) || null;
+  /**
+   * Gets prices of a timeframe no crossing on the watchlist uses, for looking at on the chart. Fetched when
+   * missing or not fetched in the last 30 minutes; the regular checks leave them alone.
+   */
+  M.loadView = async (symbol, tf) => {
+    if (M.watched(symbol, tf)) return;
+    const key = symbol + '|' + tf;
+    const v = viewing.get(key);
+    if (v && (v.busy || Date.now() - v.at < 30 * 60000)) return;
+    viewing.set(key, { busy: true, at: Date.now(), failed: false });
+    let failed = false;
+    try {
+      const bars = await K.history(symbol, tf);
+      S.saveBars(symbol, tf, bars);
+      M.bars.set(key, bars.closes.length ? bars : M.bars.get(key) || null);
+    } catch (e) {
+      host.log(`no ${tf} prices for ${symbol}: ${e.message}`);
+      failed = true;
+    }
+    viewing.set(key, { busy: false, at: Date.now(), failed });
+    draw();
+  };
   M.has = symbol => M.assets.some(a => a.symbol === symbol);
   /** The saved result of a crossing, when it was made with the crossing's present settings. */
   M.entryOf = a => {
@@ -59,7 +91,7 @@
 
   /** Checks every asset now. A quiet check only speaks up when there is something new. */
   M.refresh = async (quiet = false) => {
-    if (M.checking) return;
+    if (M.checking || M.scan.running) return; // the scan and the check share one speed limit
     M.checking = true;
     draw();
     let sent;
@@ -71,6 +103,7 @@
     }
     M.reload();
     M.checking = false;
+    if (sent === null && !quiet) U.toast('A scan is running. Prices are checked as soon as it ends.');
     if (sent !== null) {
       if (sent < 0) U.toast("Couldn't reach the price source. Check your connection.");
       else if (sent > 0) U.toast(sent === 1 ? '1 new crossing. See Alerts.' : `${sent} new crossings. See Alerts.`);
@@ -261,6 +294,94 @@
       }
     }
     return out.sort((p, q) => (p.date < q.date ? 1 : p.date > q.date ? -1 : 0));
+  };
+
+  // --- the screener ---
+  const Z = EMA.scan;
+  /** What the Scan tab shows: the results, each market's last scan, the rules, and a scan running now. */
+  M.scan = { results: { at: 0, hits: [] }, state: {}, settings: null, list: null, running: false, done: 0, total: 0 };
+  M.reloadScan = async () => {
+    M.scan.list = await Z.list();
+    M.scan.results = Z.results();
+    M.scan.state = Z.state();
+    M.scan.settings = Z.settings();
+    draw();
+  };
+
+  /** Scans every list now, with the app open. Never while the price check runs: the two share one speed limit. */
+  M.scanNow = async () => {
+    if (M.scan.running) return;
+    if (M.checking) return U.toast('Prices are being checked. Try the scan again in a moment.');
+    M.scan.running = true;
+    M.scan.done = 0;
+    M.scan.total = (await Z.list()).symbols.length;
+    draw();
+    let r = null;
+    let last = 0;
+    try {
+      r = await Z.runAll((done, total) => {
+        M.scan.done = done;
+        M.scan.total = total;
+        if (Date.now() - last > 500) {
+          last = Date.now();
+          draw();
+        }
+      });
+    } catch (e) {
+      host.log('scan failed: ' + e);
+    }
+    M.scan.running = false;
+    await M.reloadScan();
+    if (r === null) U.toast('A price check is running in the background. Try the scan again in a minute.');
+    else if (!r.ok && (r.status === 'throttled' || r.status === 'cooling')) {
+      U.toast(`Yahoo asked the app to slow down, so the scan waits until ${C.stamp(EMA.scan.coolUntil(), true)} and then carries on by itself.`);
+    }
+    else if (r.ok) U.toast(`Scanned ${r.scanned} symbols${r.failed ? `, ${r.failed} could not be read` : ''}. ${M.scan.results.hits.length} recent crossings.`);
+  };
+
+  /** Changes the scan's choices and works out the results again from the saved prices (no download). */
+  M.setScan = async patch => {
+    Z.saveSettings(patch);
+    M.scan.settings = Z.settings();
+    if ('scanOn' in patch) await Z.schedule();
+    if ('rules' in patch || 'days' in patch) await Z.evaluate();
+    await M.reloadScan();
+  };
+  M.toggleRule = index => {
+    const rules = Z.settings().rules.map((r, i) => i === index ? Object.assign({}, r, { on: !r.on }) : r);
+    if (!rules.some(r => r.on)) return U.toast('Keep at least one rule on, or turn the scan off.');
+    M.setScan({ rules });
+  };
+  /** Adds a rule of the user's own, switched on. False when it is not a valid rule. */
+  M.addRule = rule => {
+    const r = { kind: rule.kind || 'ema', fast: rule.fast, slow: rule.slow, tf: rule.tf || '1d', on: true };
+    if (!C.validAsset(C.ruleAsset(r, 'X'))) return false;
+    const rules = Z.settings().rules;
+    const same = rules.findIndex(x => C.ruleId(x) === C.ruleId(r));
+    M.setScan({ rules: same >= 0 ? rules.map((x, i) => i === same ? r : x) : rules.concat([r]) });
+    return true;
+  };
+  M.removeRule = index => {
+    const rules = Z.settings().rules.filter((r, i) => i !== index);
+    if (!rules.some(r => r.on)) return U.toast('Keep at least one rule on, or turn the scan off.');
+    M.setScan({ rules });
+  };
+  M.clearScan = async () => {
+    Z.clear();
+    await M.reloadScan();
+  };
+
+  /** Puts a found symbol on a watchlist with the crossing that found it, alerting on it from now on. */
+  M.addFromScan = (hit, listId = M.listId) => {
+    const rule = { fast: hit.fast, slow: hit.slow, tf: hit.tf, kind: hit.kind };
+    const nextLists = withList(listId, list => list.includes(hit.symbol) ? list : list.concat([hit.symbol]));
+    const mine = M.assets.filter(a => a.symbol === hit.symbol);
+    const has = mine.some(a => a.fast === rule.fast && a.slow === rule.slow && a.tf === rule.tf && a.kind === rule.kind);
+    M.lists = nextLists;
+    S.saveLists(nextLists);
+    if (has) return saveLists(nextLists);
+    const name = mine.length ? mine[0].name : hit.name.replace(/\.BK$/, '');
+    save(M.assets.concat([C.asset(Object.assign({ id: newId(), name, symbol: hit.symbol }, rule))]), hit.symbol);
   };
 
   // --- backup ---

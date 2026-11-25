@@ -46,7 +46,33 @@
     "1h": [["1W", 7], ["2W", 14], ["1M", 31], ["3M", 92], ["6M", 183]]
   },
   "history": { "1d": "5y", "1wk": "10y", "1h": "6mo" },
+  "recent": { "1d": "1mo", "1wk": "3mo", "1h": "5d" },
+  "fullEveryDays": 7,
   "nearSteps": [0.5, 1, 2],
+  "scan": {
+    "markets": {
+      "th": { "name": "Thailand", "tz": "Asia/Bangkok", "close": "16:30", "days": [0, 1, 2, 3, 4], "refs": ["^SET.BK", "PTT.BK", "ADVANC.BK"] },
+      "us": { "name": "United States", "tz": "America/New_York", "close": "16:00", "days": [0, 1, 2, 3, 4], "refs": ["^GSPC", "SPY", "AAPL"] },
+      "crypto": { "name": "Crypto", "tz": "UTC", "close": "00:00", "days": [0, 1, 2, 3, 4, 5, 6], "refs": ["BTC-USD"], "weekEnd": 6 }
+    },
+    "perSecond": 2,
+    "coolMinutes": 30,
+    "afterCloseMinutes": 20,
+    "fullEveryDays": 14,
+    "runSeconds": 360,
+    "rules": [
+      { "kind": "ema", "fast": 50, "slow": 200, "tf": "1d", "on": true },
+      { "kind": "ema", "fast": 50, "slow": 200, "tf": "1wk", "on": true },
+      { "kind": "ema", "fast": 20, "slow": 50, "tf": "1d", "on": false },
+      { "kind": "ema", "fast": 1, "slow": 200, "tf": "1d", "on": false },
+      { "kind": "ema", "fast": 12, "slow": 26, "tf": "1d", "on": false },
+      { "kind": "rsi", "fast": 30, "slow": 70, "tf": "1d", "on": false },
+      { "kind": "macd", "fast": 12, "slow": 26, "tf": "1d", "on": false },
+      { "kind": "ema", "fast": 20, "slow": 50, "tf": "1wk", "on": false }
+    ],
+    "days": [1, 3, 5, 10],
+    "noticeHour": 7
+  },
   "checkMinutes": { "normal": 180, "hourly": 60 },
   "updateUrl": "https://maqqros.github.io/ema-crossing-updates"
 }

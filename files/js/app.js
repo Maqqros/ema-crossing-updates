@@ -2,7 +2,7 @@
 // Start-up of the app on screen: which screen is showing, drawing it, and reacting to what the engine reports.
 (function (EMA) {
   const host = EMA.host, U = EMA.ui, M = EMA.model, K = EMA.check, V = EMA.screens;
-  let route = 'home'; // "home", "add", "order", "news", "a:<article>", "d:<symbol>" or "widget"
+  let route = 'home'; // "home", "add", "order", "news", "a:<article>", "d:<symbol>" or "widget" ("scan" opens the Scan tab)
   let drawn = null;
 
   const view = () => route === 'widget' ? V.widget() : route === 'add' ? V.add() : route === 'order' ? V.order() : route === 'news' ? V.news()
@@ -108,6 +108,10 @@
   };
 
   EMA.go = next => {
+    if (next === 'scan') { // the Scan tab, from a scan notification
+      V.state.tab = V.SCAN;
+      next = 'home';
+    }
     if (next.startsWith('d:') && !M.has(next.slice(2))) next = 'home';
     U.closeAll();
     if (next === 'add') V.state.add = null;
@@ -145,6 +149,12 @@
     root.classList.toggle('kb', keyboard > 0);
   }
 
+  /** Reads the bars' heights from the engine again. */
+  function syncInsets() {
+    const i = host.freshInfo().insets;
+    insets(Array.isArray(i) ? i : host.info.insets);
+  }
+
   const stale = () => Date.now() - M.lastChecked > 30 * 60000;
 
   host.on((topic, data) => {
@@ -160,7 +170,12 @@
         M.reload();
         EMA.draw();
       }
+    } else if (topic === 'scanned') {
+      // A background scan finished while the app was open.
+      if (!M.scan.running) M.reloadScan();
     } else if (topic === 'resume') {
+      M.reloadScan();
+      syncInsets();
       M.reload();
       EMA.draw();
       if (M.assets.length && stale()) M.refresh(true);
@@ -175,16 +190,21 @@
       document.getElementById('app').textContent = 'EMA Crossing could not start: ' + e.message;
       return;
     }
-    insets(host.info.insets);
+    syncInsets();
+    // Some phones report the bars' heights only after the page has started, and that first report can be missed:
+    // ask again a few times, so the app never sits under the phone's own buttons.
+    for (const ms of [300, 1000, 3000]) setTimeout(syncInsets, ms);
     M.reload();
     EMA.theme();
     if (host.info.widgetSetup) route = 'widget';
+    else if (host.info.route === 'scan') V.state.tab = V.SCAN;
     else if (host.info.route && (!host.info.route.startsWith('d:') || M.has(host.info.route.slice(2)))) route = host.info.route;
     EMA.draw();
     host.ready();
     if (route === 'widget') return;
 
     K.schedule();
+    EMA.scan.schedule();
     const flash = host.get('flash', null);
     if (flash) {
       host.remove('flash');

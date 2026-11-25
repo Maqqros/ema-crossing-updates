@@ -44,7 +44,11 @@ window.EMA = window.EMA || {};
   EMA.host = {
     /** What the engine says about itself: {api, shellCode, shellName, pack, packName, sdk, dark, foreground, job, route, insets, widgetSetup}. */
     info: json(H.info(), {}),
+    /** The engine's info as it is now (`info` is read once, at start). */
+    freshInfo: () => json(H.info(), {}),
     get: (key, fallback = null) => json(H.get(key), fallback),
+    /** A kept value as the text it is stored as, or null. */
+    raw: key => H.get(key),
     set: (key, value) => H.set(key, JSON.stringify(value)),
     remove: key => H.remove(key),
     keys: prefix => json(H.keys(prefix), []),

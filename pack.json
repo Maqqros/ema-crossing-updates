@@ -1,15 +1,15 @@
 {
  "format": 1,
- "version": 8,
+ "version": 9,
  "name": "1.2",
  "minApi": 1,
- "notes": "Watchlist tabs always at the top, dragging near an edge scrolls, and a bar under the chart to move through time.",
- "id": "ab14af17",
- "built": "25 Nov 2026 11:18",
+ "notes": "A new Scan tab finds recent crossings in the SET100 and the S&P 500; Daily, Weekly and Hourly above every chart; lighter price checks.",
+ "id": "22809029",
+ "built": "25 Nov 2026 16:17",
  "files": {
   "app.css": {
-   "sha256": "8961abb7f0fa6fa9aa91560fcc3f3b6d1d2d9dad3211bd632dea39be34573234",
-   "size": 14673
+   "sha256": "a1eecd85fbcbb81e3de84c1e9a38bc41127d979b3248f0345f17748f292f8e55",
+   "size": 14785
   },
   "articles/001-2026-11-20-most-trades-lost.html": {
    "sha256": "a7b6cb67db1b0e21f8764ec7ff07e2fefcd47efa5d11d5e43db34adf8a2ff129",
@@ -44,52 +44,60 @@
    "size": 3788
   },
   "background.html": {
-   "sha256": "5af04caaf2d4d1eddbb46204168e9c232177312f15abb5f76d55e4448bced4f5",
-   "size": 1143
+   "sha256": "013ef6cb99e10fb170a889d70d8fb220209685c99776c9e191a417e019d64d16",
+   "size": 1591
   },
   "data/catalog.json": {
-   "sha256": "6c259b91f2876157c279d02509be737a17a055c9525122b392b3d97a4c667f38",
-   "size": 2992
+   "sha256": "9af2270829d25dc71ec6bcc83e8c933696b66e251b36b91917ad3c0f4efcb901",
+   "size": 4316
   },
   "data/changelog.md": {
-   "sha256": "6d62fe55d4b4bd81cdcb3f91cbf6c7f422cb0feb312c124affbdda0e0583677d",
-   "size": 10938
+   "sha256": "afc54d95f50a29d11b4da91ddd490815bc9fb188d4dfd83548de65ed58b7867d",
+   "size": 13705
+  },
+  "data/scan.txt": {
+   "sha256": "aa9c784d3dc77fc204dcef01371479d1122809486531499b685ac178c865dd4c",
+   "size": 11598
   },
   "index.html": {
-   "sha256": "f7fe318eb75e146ab18e7bbc262d05dd4011ed4434c107578bea911b5d6f2d23",
-   "size": 668
+   "sha256": "8d1c4181065c81684d8201329218179cb9fc462a3b593deda61fb4d4ff22a366",
+   "size": 723
   },
   "js/app.js": {
-   "sha256": "25462e6a1e4c5b1d687155395ac503b20a26ccdf7667877f91dd16316a6061fc",
-   "size": 7384
+   "sha256": "abe3f673915370ee6fa6dbb4ed48bfb621a67659d0ba92d855d4d3ba4f4fc213",
+   "size": 8239
   },
   "js/chart.js": {
    "sha256": "bfb6ae297492adab6aa726679280bd5ee457e1da8ffca66348d8a251193e196a",
    "size": 21228
   },
   "js/check.js": {
-   "sha256": "d5843e4ae7790997505701fde427adb1f09dd6b9ccc8482d7bc67d5cb95ff4dc",
-   "size": 15332
+   "sha256": "f24189efc483c2005e528b7d5287c887143ed7471914917cabe04ad2d8f64525",
+   "size": 17119
   },
   "js/core.js": {
-   "sha256": "05415f15eb92518ca5119c2915b0a4a14bfad6a1f28b76a01258333d4298b948",
-   "size": 25740
+   "sha256": "7f33a32b7bc7080a279aa2ac56185525f0435199d72e213bda1917f841b21918",
+   "size": 35357
   },
   "js/data.js": {
    "sha256": "3da79a8cc799575454b9aee7db6c88aa1365f2bc4bc40c9daf6a06ea2acca852",
    "size": 6807
   },
   "js/host.js": {
-   "sha256": "ce3e5c589bc5fcca6fc3a4c4502eb4345b061c953f67fc20967fb49c39e86d84",
-   "size": 2893
+   "sha256": "e9123c691a71d3c8aa061d7625a660dab09a80319ff241e433e7a2e894dd7b4a",
+   "size": 3099
   },
   "js/model.js": {
-   "sha256": "d674ae57b50c3d6b9ede1c2ddfd6fac6e7875c108a6e002326135ebebeb4c22e",
-   "size": 15504
+   "sha256": "365a9e68580671e29dbadffaa658c4c15dbe7421c4043273727e05dbd8aa0b54",
+   "size": 21127
+  },
+  "js/scan.js": {
+   "sha256": "34b1e1bc1d9b419ad7b5bb65e48bc011ab57792d741a0586ea2e33acf01b5723",
+   "size": 17255
   },
   "js/screens.js": {
-   "sha256": "7d9a277779cc1be5628eb26a411bcb189543fb4f5d3bb17c636ee7b42a1c656a",
-   "size": 50433
+   "sha256": "0f8d7579bee5dba33b36d4818bdf03519e14785ba5643a0db9708bef19dcd8be",
+   "size": 64098
   },
   "js/ui.js": {
    "sha256": "234019f80748f8d9ee5f0375aac936c1098ff0f677b579c8da543a0563e475ea",
