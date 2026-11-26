@@ -6,7 +6,13 @@ What changed in each version of EMA Crossing, newest first. In the app: Settings
 
 Finished 21 November 2026. Everything from 1.1 below is in it.
 
-Pack 10, 25 November 2026 (arrives on its own, nothing to install)
+Pack 11, 26 November 2026 (arrives on its own, nothing to install)
+
+- **New scan symbols show at once.** Symbols new to the scan (the Nasdaq 100 and Major assets after pack 10) used to wait for their market's next scan. Now the app copies their prices from the update when it opens, with no download, and shows their crossings straight away, up to the date of those prices (24 November 2026). The market's next scan adds the days since.
+- **Tap a scan find to see its chart.** Tapping a symbol on the Scan tab opens its own page, even when it is not on a watchlist: the full chart you can zoom and drag, Daily, Weekly and Hourly, the crossing that found it, how that crossing went before and its past crossings. **Add to watchlist** is on the page; Back returns to the same place in the list.
+- Fixed: during **Scan now** the Scan tab was drawn again after each symbol, and on the phone it jumped back to the top each time. Now only the "Scanning… N of 632" line changes while it runs.
+
+Pack 10, 25 November 2026 (arrived on its own, nothing to install)
 
 - **More to scan: 632 symbols.** Besides the SET100 and the S&P 500, the scan now covers the **Nasdaq 100** and a **Major assets** list: gold, silver, WTI and Brent oil, the US dollar index, the dollar against the baht, euro, yen, pound, yuan, Swiss franc and Australian dollar, Bitcoin and Ethereum. Each is scanned once Yahoo counts its day as over: commodities and the dollar index after midnight New York time, currencies and crypto after midnight UTC (07:20 in Thailand).
 - **The scan's first run is light.** The update carries 5 years of daily prices (open, high, low, close and volume) for all 632 symbols, up to 24 November 2026, so the first scan only fetches the last month of each. The file is 15.5 MB, 5.7 MB as it travels compressed.

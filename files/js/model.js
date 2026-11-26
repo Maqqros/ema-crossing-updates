@@ -317,15 +317,12 @@
     M.scan.total = (await Z.list()).symbols.length;
     draw();
     let r = null;
-    let last = 0;
     try {
+      // Only the progress line changes while it runs; the tab is drawn again once, at the end.
       r = await Z.runAll((done, total) => {
         M.scan.done = done;
         M.scan.total = total;
-        if (Date.now() - last > 500) {
-          last = Date.now();
-          draw();
-        }
+        EMA.screens.scanProgress();
       });
     } catch (e) {
       host.log('scan failed: ' + e);

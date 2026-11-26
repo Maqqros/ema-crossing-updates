@@ -1,11 +1,11 @@
 {
  "format": 1,
- "version": 10,
+ "version": 11,
  "name": "1.2",
  "minApi": 1,
- "notes": "The scan now covers 632 symbols: the Nasdaq 100 and major assets (gold, silver, oil, currencies, Bitcoin) join the SET100 and S&P 500, and its first run starts from 5 years of prices in the update.",
- "id": "18feb27c",
- "built": "25 Nov 2026 17:29",
+ "notes": "Tap a scan find to see its full chart; symbols new to the scan, like Major assets, show at once; the Scan tab no longer jumps to the top during Scan now.",
+ "id": "874e8905",
+ "built": "26 Nov 2026 01:20",
  "files": {
   "app.css": {
    "sha256": "a1eecd85fbcbb81e3de84c1e9a38bc41127d979b3248f0345f17748f292f8e55",
@@ -52,8 +52,8 @@
    "size": 4624
   },
   "data/changelog.md": {
-   "sha256": "89aa0e1f37cfe0370975587ede9b13b5b3f667371f6fc5242550bb2ab0f11682",
-   "size": 15160
+   "sha256": "f61499726ba452ac109ba9b692e7f8b4433d280e9aac9dd0e66cf3b4c82728a4",
+   "size": 16149
   },
   "data/scan-seed.json": {
    "sha256": "81a33f9c9999395cfb80eb676ef03367235fc277e3b705d7ec336045d150e5b1",
@@ -68,8 +68,8 @@
    "size": 723
   },
   "js/app.js": {
-   "sha256": "abe3f673915370ee6fa6dbb4ed48bfb621a67659d0ba92d855d4d3ba4f4fc213",
-   "size": 8239
+   "sha256": "047c50e847744cf82132f905b5228e7cb654fa5a43ba936c910b789ab69b237f",
+   "size": 8654
   },
   "js/chart.js": {
    "sha256": "bfb6ae297492adab6aa726679280bd5ee457e1da8ffca66348d8a251193e196a",
@@ -92,16 +92,16 @@
    "size": 3099
   },
   "js/model.js": {
-   "sha256": "365a9e68580671e29dbadffaa658c4c15dbe7421c4043273727e05dbd8aa0b54",
-   "size": 21127
+   "sha256": "c994f274d452678effd921db83e33a72feb3384ec42e37c33bcaddde3a68b1dd",
+   "size": 21145
   },
   "js/scan.js": {
-   "sha256": "afcf898f9af2dc78bb686f9b7244d368af2415c561fc1a69f658f9f53824380a",
-   "size": 19554
+   "sha256": "56a984372dcf35bddb2f30eb269686d768e9d5fad87f1cdd577a940d9a5aeb36",
+   "size": 20678
   },
   "js/screens.js": {
-   "sha256": "951ee786db840c2d442a83dcb4b269503245e4483d9b44fff76430b3d4ff1680",
-   "size": 64875
+   "sha256": "10eac7512b6fcad877298c0c33478842774fa1b11928f8184d2359326dc07f3d",
+   "size": 69595
   },
   "js/ui.js": {
    "sha256": "234019f80748f8d9ee5f0375aac936c1098ff0f677b579c8da543a0563e475ea",

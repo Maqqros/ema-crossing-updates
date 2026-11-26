@@ -445,6 +445,7 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
   const SCAN = 2; // the Scan tab's place in the bottom bar
   V.SCAN = SCAN;
   const scanFilter = { list: '', side: '' };
+  V.scanFilter = scanFilter;
 
   /** The name of a scan rule, as on the watchlist: "EMA 50 / 200", "Weekly RSI 30 / 70". */
   const ruleName = r => C.assetLabel(C.ruleAsset(r));
@@ -453,6 +454,7 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
   function scanStatus() {
     const sc = M.scan, cfg = EMA.catalog.scan || {};
     const lines = [];
+    const saved = new Set(EMA.host.keys('scan:').map(k => k.slice(5)));
     for (const market of Object.keys(cfg.markets || {})) {
       const count = sc.list ? sc.list.symbols.filter(x => C.marketOf(x.symbol) === market).length : 0;
       if (!count) continue;
@@ -463,6 +465,7 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
       if (s.cursor) text = `${name}: ${s.cursor} of ${count} scanned, carrying on soon`;
       else if (s.holiday && s.day) text = `${name}: closed on ${C.niceDate(s.day)}, nothing new`;
       else if (s.at) text = `${name}: ${s.scanned || count} symbols scanned ${C.stamp(s.at)}` + (failed ? ` · ${failed} could not be read` : '');
+      else if (sc.list.symbols.some(x => C.marketOf(x.symbol) === market && saved.has(x.symbol))) text = `${name}: ${count} symbols, from the prices in the update until the first scan after its close`;
       else text = `${name}: ${count} symbols, not scanned yet`;
       lines.push(h('div', { class: 't-body-s muted', role: failed ? 'button' : null, onclick: failed ? () => failedDialog(name, s.failed) : null }, text));
     }
@@ -481,7 +484,7 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
   function hitRow(x) {
     const watched = M.assets.some(a => a.symbol === x.symbol && a.fast === x.fast && a.slow === x.slow && a.tf === x.tf && a.kind === x.kind);
     const days = C.daysSince(x.date);
-    return h('div', { class: 'card tight', role: 'button', onclick: () => hitDialog(x) },
+    return h('div', { class: 'card tight', role: 'button', onclick: () => openHit(x) },
       h('div', { class: 'hrow' },
         h('div', { class: 'dot ' + (x.up ? 'up' : 'down') }, x.up ? '↑' : '↓'),
         h('div', { class: 'grow', style: 'margin-left:12px;min-width:0' },
@@ -516,28 +519,97 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
     }));
   }
 
-  function hitDialog(x) {
-    const label = x.name === x.symbol ? x.symbol.replace(/\.BK$/, '') : x.name;
-    const watched = M.has(x.symbol);
-    U.dialog(close => ({
-      title: label,
-      body: h('div', null,
-        h('div', { class: 't-body-m muted' }, `${x.symbol} · on ${x.lists.join(', ')}`),
-        h('div', { class: 't-title-m mt12 ' + (x.up ? 'up' : 'down') }, (x.up ? '↑ ' : '↓ ') + C.crossText(C.ruleAsset(x), x.up)),
-        h('div', { class: 't-body-m mt4' }, `${C.barDate(x.date, x.tf)} · ${C.ago(x.date)} · close ${C.money(x.close)} ${x.currency || ''}`.trim()),
-        x.price != null ? h('div', { class: 't-body-m mt4' }, `Latest ${C.money(x.price)}` + (x.change != null ? ` (${C.signed(x.change)} on the day)` : '')) : null,
-        h('div', { class: 't-body-s muted mt12' }, watched
-          ? 'It is on a watchlist already. Adding it puts this crossing on it too.'
-          : 'Adding it puts it on a watchlist with this crossing, so you get alerts and the full chart from now on.')),
-      actions: [['Close', close], watched ? ['Open', () => {
-        close();
-        go('d:' + x.symbol);
-      }] : null, ['Add to watchlist', () => {
-        close();
-        addHit(x);
-      }]].filter(Boolean)
-    }));
+  /** Opens a found symbol's own page, with its chart, whether or not it is on a watchlist. */
+  function openHit(x) {
+    const keep = document.querySelector('[data-keep=scan]');
+    st.hit = { x, frame: x.tf, back: keep ? keep.scrollTop : 0 };
+    go('s:' + x.symbol);
   }
+  const hitPrices = new Map(); // "symbol|tf" → {bars, busy, failed, at}: fetched for looking only, not saved
+  function hitBars(symbol, tf) {
+    const key = symbol + '|' + tf;
+    const v = hitPrices.get(key);
+    if (v && (v.busy || Date.now() - v.at < 30 * 60000)) return v;
+    const next = { bars: v ? v.bars : null, busy: true, failed: false, at: Date.now() };
+    hitPrices.set(key, next);
+    K.fetch(symbol, tf).then(bars => {
+      next.bars = bars && bars.closes.length ? bars : next.bars;
+      next.failed = !next.bars;
+    }, e => {
+      EMA.host.log(`no ${tf} prices for ${symbol}: ${e.message}`);
+      next.failed = true;
+    }).then(() => {
+      next.busy = false;
+      if (st.hit && st.hit.x.symbol === symbol) EMA.draw();
+    });
+    return next;
+  }
+  /** Back from a found symbol's page to the Scan tab, where it was. */
+  V.hitBack = () => {
+    const back = st.hit ? st.hit.back : 0;
+    st.hit = null;
+    go('home');
+    const el = document.querySelector('[data-keep=scan]');
+    if (el) el.scrollTop = back;
+  };
+
+  /** The page of a symbol found by the scan: its chart on the crossing that found it, past crossings, Add. */
+  V.scanHit = symbol => {
+    const s = st.hit;
+    if (!s || s.x.symbol !== symbol) {
+      setTimeout(() => go('home'), 0);
+      return h('div', { class: 'screen' });
+    }
+    const x = s.x;
+    const label = x.name === x.symbol ? x.symbol.replace(/\.BK$/, '') : x.name;
+    const rule = C.ruleAsset(x, x.symbol, label);
+    const frame = s.frame;
+    const onChart = frame === x.tf ? rule : C.asset({ id: 'view', name: label, symbol, fast: 50, slow: 200, tf: frame });
+    const v = hitBars(symbol, frame);
+    const bars = v.bars;
+    const kids = [];
+    const quote = C.quoteOf(frame === '1d' ? bars : hitBars(symbol, '1d').bars); // the price is always the daily one
+    if (quote) kids.push(priceHeader(quote));
+    kids.push(h('div', { class: 'card tight', style: 'margin-bottom:12px' },
+      h('div', { class: 't-title-m ' + (x.up ? 'up' : 'down') }, (x.up ? '↑ ' : '↓ ') + C.crossText(rule, x.up)),
+      h('div', { class: 't-body-m mt4' }, `${C.barDate(x.date, x.tf)} · ${C.ago(x.date)} · close ${C.money(x.close)} ${x.currency || ''}`.trim()),
+      h('div', { class: 't-body-s muted mt4' }, `Found by the scan · on ${x.lists.join(', ')}`)));
+    kids.push(h('div', { style: 'margin-bottom:8px' }, U.seg(EMA.catalog.frames, frame, tf => {
+      s.frame = tf;
+      EMA.draw();
+    })));
+    if (bars && bars.closes.length >= 2) {
+      const key = 'scan:' + symbol + '|' + frame;
+      kids.push(EMA.chart(bars, onChart, st.charts[key] || (st.charts[key] = {})));
+      if (onChart.id === 'view') kids.push(h('div', { class: 't-body-s muted mt8' }, `The scan found a ${C.tfWord(x.tf)} crossing, so the ${C.tfWord(frame)} chart shows EMA 50 / 200.`));
+    } else if (v.failed) {
+      kids.push(U.card(null, U.empty(`Couldn't load ${C.tfWord(frame)} prices`, 'Check your connection, then pick the timeframe again.')));
+    } else {
+      kids.push(U.card(null, U.empty(`Loading ${C.tfWord(frame)} prices…`, 'This takes a moment.')));
+    }
+    const watched = M.has(symbol);
+    kids.push(h('div', { class: 'hrow mt16', style: 'gap:8px' },
+      U.btn(watched ? 'Add this crossing to a watchlist' : 'Add to watchlist', () => addHit(x)),
+      watched ? U.btn('Open on watchlist', () => go('d:' + symbol), 'outline') : null));
+    kids.push(h('div', { class: 't-body-s muted mt8' }, watched
+      ? 'It is on a watchlist already. Adding puts this crossing on it too, with alerts.'
+      : 'It is not on a watchlist, so no alerts come from it. Adding it puts it on one with this crossing.'));
+    if (bars && frame === x.tf && bars.closes.length >= C.need(rule)) {
+      const crosses = C.crosses(rule, bars.closes);
+      kids.push(trackRecord(bars, rule));
+      kids.push(h('div', { class: 'section' }, `Past crossings · ${C.assetLabel(rule)}`),
+        U.card({ style: 'padding:6px 16px' },
+          crosses.length ? null : h('div', { class: 't-body-m muted', style: 'padding:10px 0' }, 'No crossing in the price history available.'),
+          crosses.slice(-8).reverse().map(c => h('div', { class: 'hrow', style: 'padding:10px 0' },
+            h('div', { class: c.up ? 'up' : 'down', style: 'width:24px;font-weight:700' }, c.up ? '↑' : '↓'),
+            h('div', { class: 'grow' }, h('div', { class: 't-body-m' }, C.eventWord(rule, c.up)), h('div', { class: 't-body-s muted' }, C.barDate(bars.dates[c.index], rule.tf))),
+            h('div', { class: 't-body-m', style: 'font-weight:500' }, C.money(bars.closes[c.index]))))));
+    }
+    kids.push(h('div', { class: 't-body-s muted mt16' }, 'The scan describes what prices did. It is not advice to buy or sell.'));
+    return h('div', { class: 'screen' },
+      U.subTop(label, V.hitBack, symbol),
+      h('div', { class: 'body end', style: 'padding-bottom:calc(32px + var(--ibx))', 'data-keep': 's:' + symbol }, kids));
+  };
 
   function customRuleDialog() {
     const digits = e => {
@@ -593,6 +665,16 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
       h('div', { class: 'mt4' }, U.switchRow('Scan after each close', 'Thai shares after the Thai close, US shares after the US close, on each market\'s own clock. Weekends and holidays are skipped.', sc.scanOn, scanOn => M.setScan({ scanOn }))));
   }
 
+  const scanProgressText = () => `Scanning… ${M.scan.done} of ${M.scan.total}`;
+  /**
+   * Shows the scan's progress without drawing the tab again. Drawing it for every symbol scanned threw the
+   * Scan tab back to its top on the phone, so during a scan only this line changes.
+   */
+  V.scanProgress = () => {
+    const el = document.getElementById('scanprogress');
+    if (el) el.textContent = scanProgressText();
+  };
+
   function scanTab(wrap) {
     const sc = M.scan;
     if (!sc.list) {
@@ -605,7 +687,7 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
     const shown = hits.filter(x => (!scanFilter.list || x.lists.includes(scanFilter.list)) && (!scanFilter.side || (scanFilter.side === 'up') === x.up));
     const kids = [];
     kids.push(h('div', null, sc.running
-      ? h('div', { class: 't-body-m' }, `Scanning… ${sc.done} of ${sc.total}`)
+      ? h('div', { class: 't-body-m', id: 'scanprogress' }, scanProgressText())
       : scanStatus()));
     if (sc.list.skipped.length) {
       kids.push(h('div', { class: 't-body-s err' }, `${sc.list.skipped.length} line${sc.list.skipped.length === 1 ? '' : 's'} of the list could not be read: ` +

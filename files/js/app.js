@@ -2,11 +2,12 @@
 // Start-up of the app on screen: which screen is showing, drawing it, and reacting to what the engine reports.
 (function (EMA) {
   const host = EMA.host, U = EMA.ui, M = EMA.model, K = EMA.check, V = EMA.screens;
-  let route = 'home'; // "home", "add", "order", "news", "a:<article>", "d:<symbol>" or "widget" ("scan" opens the Scan tab)
+  let route = 'home'; // "home", "add", "order", "news", "a:<article>", "d:<symbol>", "s:<symbol>" (a scan find) or "widget" ("scan" opens the Scan tab)
   let drawn = null;
 
   const view = () => route === 'widget' ? V.widget() : route === 'add' ? V.add() : route === 'order' ? V.order() : route === 'news' ? V.news()
-    : route.startsWith('a:') ? V.article(route.slice(2)) : route.startsWith('d:') ? V.detail(route.slice(2)) : V.home();
+    : route.startsWith('a:') ? V.article(route.slice(2)) : route.startsWith('d:') ? V.detail(route.slice(2))
+    : route.startsWith('s:') ? V.scanHit(route.slice(2)) : V.home();
 
   // --- holding the screen still ---
   // Every change draws the whole screen again. Whatever was tapped is put back exactly where it was,
@@ -126,6 +127,10 @@
       host.finish(false);
       return true;
     }
+    if (route.startsWith('s:')) {
+      V.hitBack();
+      return true;
+    }
     if (route !== 'home') {
       EMA.go('home');
       return true;
@@ -198,13 +203,15 @@
     EMA.theme();
     if (host.info.widgetSetup) route = 'widget';
     else if (host.info.route === 'scan') V.state.tab = V.SCAN;
-    else if (host.info.route && (!host.info.route.startsWith('d:') || M.has(host.info.route.slice(2)))) route = host.info.route;
+    else if (host.info.route && !host.info.route.startsWith('s:') && (!host.info.route.startsWith('d:') || M.has(host.info.route.slice(2)))) route = host.info.route;
     EMA.draw();
     host.ready();
     if (route === 'widget') return;
 
     K.schedule();
     EMA.scan.schedule();
+    // Symbols new to the list start from the pack's prices straight away, with no download.
+    setTimeout(() => EMA.scan.adoptOnStart === false || EMA.scan.adopt().catch(e => host.log('scan adopt: ' + e)), 3000);
     const flash = host.get('flash', null);
     if (flash) {
       host.remove('flash');

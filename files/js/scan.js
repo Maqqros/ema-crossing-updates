@@ -84,6 +84,32 @@
     }
     return seed;
   };
+  /**
+   * Saves the pack's prices for every listed symbol that has none saved yet, without asking Yahoo, so symbols new
+   * to the list (or a new phone) show their crossings at once, up to the date of the pack's prices; the next scan
+   * of each market then only adds the days since. Gives the number of symbols added (0 costs one listing of keys).
+   */
+  Z.adopt = async () => {
+    const all = await Z.list();
+    const have = new Set(host.keys('scan:').map(k => k.slice(5)));
+    const missing = all.symbols.filter(s => !have.has(s.symbol));
+    if (!missing.length) return 0;
+    const s = await Z.seed();
+    if (!s || !s.symbols) return 0;
+    let added = 0;
+    for (const x of missing) {
+      const b = s.symbols[x.symbol];
+      if (!b || !b.closes.length) continue;
+      host.set('scan:' + x.symbol, slim(C.bars(b.dates, b.closes, b.currency, { closeUtc: b.closeUtc }), Date.now() - (hash(x.symbol) % 30) * DAY));
+      added++;
+    }
+    if (added) {
+      await Z.evaluate();
+      host.emit('scanned');
+    }
+    Z.forgetSeed(); // about 30 MB while held; read again only if needed
+    return added;
+  };
   /** Lets the file be read again (after a new pack, or in a test). */
   Z.forgetSeed = () => {
     seed = undefined;
