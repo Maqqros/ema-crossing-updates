@@ -1,11 +1,11 @@
 {
  "format": 1,
- "version": 11,
+ "version": 12,
  "name": "1.2",
  "minApi": 1,
  "notes": "Tap a scan find to see its full chart; symbols new to the scan, like Major assets, show at once; the Scan tab no longer jumps to the top during Scan now.",
- "id": "874e8905",
- "built": "26 Nov 2026 01:20",
+ "id": "ae6d368f",
+ "built": "26 Nov 2026 05:33",
  "files": {
   "app.css": {
    "sha256": "a1eecd85fbcbb81e3de84c1e9a38bc41127d979b3248f0345f17748f292f8e55",
@@ -52,8 +52,8 @@
    "size": 4624
   },
   "data/changelog.md": {
-   "sha256": "f61499726ba452ac109ba9b692e7f8b4433d280e9aac9dd0e66cf3b4c82728a4",
-   "size": 16149
+   "sha256": "5e6b1eb0de7e7dec68c60a2c221ef403fe922d6c1389ec64ab5586e3e07d52a6",
+   "size": 16331
   },
   "data/scan-seed.json": {
    "sha256": "81a33f9c9999395cfb80eb676ef03367235fc277e3b705d7ec336045d150e5b1",

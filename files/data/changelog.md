@@ -6,7 +6,11 @@ What changed in each version of EMA Crossing, newest first. In the app: Settings
 
 Finished 21 November 2026. Everything from 1.1 below is in it.
 
-Pack 11, 26 November 2026 (arrives on its own, nothing to install)
+Pack 12, 26 November 2026 (arrives on its own, nothing to install)
+
+- The same as pack 11, under a new number. On a phone where pack 11 did not start in time, the app had stopped trying it; a new number lets it try again.
+
+Pack 11, 26 November 2026
 
 - **New scan symbols show at once.** Symbols new to the scan (the Nasdaq 100 and Major assets after pack 10) used to wait for their market's next scan. Now the app copies their prices from the update when it opens, with no download, and shows their crossings straight away, up to the date of those prices (24 November 2026). The market's next scan adds the days since.
 - **Tap a scan find to see its chart.** Tapping a symbol on the Scan tab opens its own page, even when it is not on a watchlist: the full chart you can zoom and drag, Daily, Weekly and Hourly, the crossing that found it, how that crossing went before and its past crossings. **Add to watchlist** is on the page; Back returns to the same place in the list.
