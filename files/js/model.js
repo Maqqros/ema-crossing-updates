@@ -394,24 +394,32 @@
     }, null, 2);
   };
 
-  /** Replaces the watchlist and settings with a backup. Gives the number of crossings restored, or -1 if the text is not a backup. */
-  M.importJson = text => {
+  /** Reads a backup without changing anything: {assets, settings, lists}, or null if the text is not a backup. */
+  M.readBackup = text => {
     const list = [];
     let s = null, lists = null;
     try {
       const root = JSON.parse(text);
-      if (root.app !== 'EMA Crossing') return -1;
+      if (root.app !== 'EMA Crossing') return null;
       for (const o of root.assets) {
-        if (o.id == null || o.name == null || o.symbol == null) return -1;
+        if (o.id == null || o.name == null || o.symbol == null) return null;
         const a = C.asset(o);
         if (C.validAsset(a) && !list.some(x => x.id === a.id)) list.push(a);
       }
       s = root.settings || null;
       lists = Array.isArray(root.lists) ? root.lists : null;
     } catch (e) {
-      return -1;
+      return null;
     }
-    if (!list.length) return -1;
+    if (!list.length) return null;
+    return { assets: list, settings: s, lists };
+  };
+
+  /** Replaces the watchlist and settings with a backup. Gives the number of crossings restored, or -1 if the text is not a backup. */
+  M.importJson = text => {
+    const b = typeof text === 'string' ? M.readBackup(text) : text;
+    if (!b) return -1;
+    const list = b.assets, s = b.settings, lists = b.lists;
     if (s) {
       const now = M.settings;
       const pick = (name, type) => typeof s[name] === type ? s[name] : now[name];
@@ -442,8 +450,13 @@
   M.restoreBackup = async () => {
     const r = await host.call('pickFile', { mimes: ['application/json', 'text/plain', 'application/octet-stream'] });
     if (r.cancelled) return;
-    const restored = r.ok ? M.importJson(r.text) : -1;
-    U.toast(restored < 0 ? 'That file is not an EMA Crossing backup.' : `Restored ${restored} crossings. Loading prices…`);
+    const backup = r.ok ? M.readBackup(r.text) : null;
+    if (!backup) return U.toast('That file is not an EMA Crossing backup.');
+    // Nothing is replaced until the user says so: the file's contents and what would be lost are shown first.
+    EMA.screens.confirmRestore(backup, () => {
+      const restored = M.importJson(backup);
+      U.toast(restored < 0 ? 'That file is not an EMA Crossing backup.' : `Restored ${restored} crossings. Loading prices…`);
+    });
   };
 
   // --- updates from a server ---
@@ -459,12 +472,12 @@
     } else M.checkUpdates(false);
   };
 
-  /** Looks for a newer pack. When one arrived, the app starts again with it and then says what is new. */
-  M.checkUpdates = async (quiet = false) => {
+  /** Looks for a newer pack (`retry`: also one this phone set aside). When one arrived, the app starts again with it and then says what is new. */
+  M.checkUpdates = async (quiet = false, retry = false) => {
     if (M.updating || !M.settings.updateUrl) return;
     M.updating = true;
     draw();
-    const r = await K.update();
+    const r = await K.update({ retry });
     M.updating = false;
     M.update = S.update();
     if (r && r.ok && r.status === 'updated') {

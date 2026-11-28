@@ -38,6 +38,7 @@
   },
   "presets": [[50, 200], [20, 50], [12, 26], [1, 200], [1, 50]],
   "frames": [["1d", "Daily"], ["1wk", "Weekly"], ["1h", "Hourly"]],
+  "smaPresets": [[50, 200], [1, 200]],
   "indicators": [["rsi", 30, 70], ["macd", 12, 26]],
   "chartOptions": [["candles", "Candles"], ["bands", "Bollinger"], ["sma", "SMA"], ["rsi", "RSI"], ["macd", "MACD"]],
   "ranges": {

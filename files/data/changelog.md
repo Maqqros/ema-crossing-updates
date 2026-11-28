@@ -2,6 +2,23 @@
 
 What changed in each version of EMA Crossing, newest first. In the app: Settings, then "What's new in this version". The version on a phone is shown at the bottom of the Settings tab.
 
+## 1.3 (28 November 2026)
+
+The app itself (installed once; later versions install themselves).
+
+- **No more false "did not start" message.** An update is now set aside only when it fails to open while the app is on screen. Background checks, an app you leave before it has loaded, and a page Android closed while the app was hidden no longer count against it. This is what set packs 11 and 12 aside on a phone where they worked.
+- **Retry update.** When an update was set aside, Settings offers **Retry update**: it deletes that update, downloads it again and tries it once more.
+- **Diagnostics.** Long-press the app icon, then **Diagnostics**: the versions, the stored updates and a log of each start, with **Copy all** and **Try set-aside updates again**.
+- **The app updates itself.** When the update server offers a newer version of the app, it is downloaded, checked (the server's signed list, this app, newer, the same signing key) and handed to Android. Android may install it with no tap, or show a notification to tap.
+
+Pack 13 (arrives on its own, nothing to install)
+
+- **Live price on the asset screen.** While an asset's screen is open its price updates by itself, at most once a second, with where it comes from and the price's own time. Crypto comes from Binance, under a second behind. Everything else comes from Yahoo, which sends some markets late: Thai shares about 30 minutes, the SET index 15 minutes, the dollar index 10 minutes; the screen then says how far behind. It is only shown: crossings and alerts still use closed bars.
+- **Restore asks first.** Restore in Settings now says what the backup holds and what it would replace, and changes nothing until you tap **Replace**.
+- **SMA alerts.** **SMA 50 / 200** and **Price / SMA 200** sit beside the EMA crossings on an asset's screen. Many charts mean the simple average when they say golden cross; its dates differ from the EMA ones.
+- **Price level alerts.** Tap **+ Price level** on an asset's screen and type a price, for example 4000 for gold. An alert comes when a close goes above it, and when it goes back below it. The chart shows the level as a line.
+- **Articles.** Three new: No. 005 (the April 2025 whipsaw), No. 006 (random picks and cutting a loss) and No. 007 (traits known in advance). Articles 001 to 004 are replaced by their rewrites, which count only trading from 1 January 2021.
+
 ## 1.2 (21 November 2026)
 
 Finished 21 November 2026. Everything from 1.1 below is in it.

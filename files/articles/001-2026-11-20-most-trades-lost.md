@@ -1,55 +1,54 @@
-# Six in ten trades lost money. The best one in thirteen carried the average.
+# Two in three trades lost money. Fewer than 2 in 100 carried the whole average
 
 Date: 2026-11-20
 
-On 3,273 US shares before 2022, a rule that traded the EMA 50 crossing the EMA 200 lost money on 61% of its 30,385 trades, yet its average trade gained 15.6%, because a small number of very large winners outweighed all the rest.
+On 4,268 US shares from the start of 2021 to November 2026, a rule that traded the EMA 50 crossing the EMA 200 lost money on 65% of its 16,074 trades, yet its average trade gained 5.9%, because a few very large winners outweighed all the rest.
 
 ## What was tested
 
-Market Lab ran one simple rule on daily prices: buy when the 50-day EMA crosses above the 200-day EMA, sell when it crosses back below. Each buy and each sell was charged 0.20%. The test used 3,273 US shares that are listed today, with prices from 1962 to the end of 2021.
+Market Lab ran one simple rule on daily prices: buy when the 50-day EMA crosses above the 200-day EMA, sell when it crosses back below. Each buy and each sell was charged 0.20%, and the rule bought each share on the first day. Only trading from 1 January 2021 to 17 November 2026 was counted; older prices served only to start the averages. The test used 4,268 US shares listed today.
 
 ## Mostly small losses
 
-Of the 30,385 trades, 18,659 ended at a loss. Only 39% were winners.
+Of the 16,074 trades, 10,390 ended at a loss. Only 35% were winners.
 
-The **median** trade, meaning the middle one when all trades are lined up from worst to best, lost 5.1%. The **mean**, the ordinary average, was a gain of 15.6%. The mean is pulled up by a few huge results.
+The **median** trade, meaning the middle one when all trades are lined up from worst to best, lost 6.5%. The **mean**, the ordinary average, was a gain of 5.9%. The mean is pulled up by a few huge results.
 
-The losses were mostly small and quick. The middle losing trade lost 10.7% and lasted 97 days. About half of all trades ended between zero and a 20% loss.
+The losses were mostly small and quick. The middle losing trade lost 12.3% and lasted 92 days. About half of all trades ended between zero and a 20% loss.
 
 ## A few long winners
 
-The winners looked very different. The middle winning trade gained 29.7% and lasted 517 days, more than five times as long as the middle loser.
+The winners looked very different. The middle winning trade gained 22.1% and lasted 427 days, more than four times as long as the middle loser.
 
-The best trades did most of the work:
+The best trades did all of the work:
 
-- The best 5% of trades (1,519 trades, each gaining more than 114%) lifted the average from 2.7% to 15.6%.
-- Without the best 2,333 trades, about one in thirteen, the average of all the others was zero or below.
-- 125 trades, fewer than one in 200, gained more than 500% each.
-
-Put plainly, the rule was wrong most of the time and stayed in for a long time on the rare occasions it was very right.
+- Without the best 5% of trades (804 trades, each gaining more than 81%), the average of the rest was a loss of 3.9%.
+- Without the best 284 trades, fewer than 2 in 100, the average of all the others was zero or below.
+- 33 trades gained more than 500% each.
 
 ## Thai shares showed the same shape
 
-On 514 Thai shares, with prices from 1987 to the end of 2021, the rule made 1,704 trades. 38% were winners. The median trade lost 5.9% and the mean trade gained 21.3%. Without the best 5% (85 trades), the average of the rest was 2.7%.
+On 570 Thai shares over the same period, the rule made 1,113 trades. 34% were winners. The median trade lost 6.2% and the mean trade gained 4.0%. Without the best 5% (56 trades), the average of the rest was a loss of 3.0%.
 
-## Even so, holding usually ended ahead
+## Against holding: mostly behind in the US, mostly ahead in Thailand
 
-A positive average trade did not mean the rule beat doing nothing. The rule ended ahead of simply holding the same share in only 29% of the US shares (962 of 3,273) and 37% of the Thai shares (189 of 514). For the typical US share the rule gained 2.0% a year, against 7.4% for holding.
+Over the same days, the rule ended ahead of simply holding the same share in 43% of the US shares (1,816 of 4,268). For the typical US share the rule lost 1.3% a year, against a gain of 0.8% for holding.
 
-What the rule did change was the depth of the falls. Its worst fall from an earlier peak was smaller than holding's in 81% of the US shares and 91% of the Thai shares. An equal mix of the US shares fell at most 23% with the rule, against 54% for holding, between 1969 and 2021.
+Thai shares fell over these years, and there the rule ended ahead in 74% of the shares (424 of 570). The typical Thai share lost 11.6% a year when held, and 1.4% a year with the rule.
 
-## A faster rule traded far more and gained less per trade
+The rule also changed the depth of the falls. Its worst fall from an earlier peak was smaller than holding's in 69% of the US shares and 91% of the Thai shares. An equal mix of the US shares fell at most 19% with the rule, against 32% for holding, but grew 4.9% a year against 7.5%.
 
-An earlier Market Lab run compared eight rules on US shares before 2022. In that run each rule waited for its first cross before buying, so its figures cannot be mixed with those above. There, price crossing the EMA 50 made 433,034 trades, held for a median of 6 days. A quarter were winners and the average trade gained 0.4%. EMA 50 crossing EMA 200 made 27,708 trades, with an average of 15.2%.
+## Faster rules traded far more and gained less per trade
+
+Market Lab also tested seven other crossing rules on the same shares and days. Price crossing the EMA 50 made 192,975 trades, held for a median of 6 days. A quarter were winners and the average trade lost 0.1%. The slow EMA 50/200 rule made 16,074.
 
 ## The limits
 
-- **Missing losers.** Yahoo removes companies that went bankrupt or were delisted. Only today's survivors were tested, so both the rule and holding look better here than they really were.
+- **Missing losers.** Yahoo removes companies that went bankrupt or were delisted. Both the rule and holding look better than they were.
 - **Hypothetical.** No order was placed. Real trading meets spreads, taxes and orders that do not fill.
-- **An average trade is not a yearly return.** Trades differ in length. The count includes each share's first purchase on the first day of its test, and 1,642 trades still open at the end of 2021, valued at the last price.
-- **Thai shares sat mostly in cash.** The typical Thai share was held only 16% of the time, against 57% for the typical US share. That alone makes falls smaller.
-- **The equal mix is a measuring device.** It is rebalanced daily at no cost.
+- **A short period.** Under six years, with one broad decline, in 2022. Nothing was held back, so no later period is left to check these findings against.
+- **An average trade is not a yearly return.** The count includes each share's first purchase and 1,808 trades still open on 17 November 2026, valued at the last price.
+- **Thai shares sat mostly in cash.** The typical Thai share was held 21% of the time, against 57% for the typical US share.- **Faulty prices left out.** 103 symbols whose prices jump like a split that was never adjusted were dropped, along with a few real jumps.
 - **Many rules, many symbols.** Some results look good by luck.
-- **2022 onward was held back** and has not been evaluated.
 
 Nothing here is a forecast or a suggestion to buy or sell.

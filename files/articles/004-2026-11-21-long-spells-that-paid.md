@@ -1,55 +1,47 @@
-# Four years out of 58: when the rule's sales paid off
+# The rule's best calls were the shares it never bought back
 
 Date: 2026-11-21
 
-On 3,273 US shares before 2022, the EMA 50/200 rule's sales, added up a year at a time, paid off on balance in only 4 of the 58 years in which it sold, and spells in cash of more than 250 days supplied 99% of all the falls it avoided.
+On 4,268 US shares from the start of 2021 to November 2026, 72% of all the falls the EMA 50/200 rule avoided came from 2,460 sales it had not bought back by 17 November 2026, and the 324 of those made in 2021 stood a median 92% below the sale price.
 
 ## Where article 002 left off
 
-Article 002 found that the rule sold and later bought back 27,112 times on US shares listed today, and that it bought back higher than it sold in 82% of them. The other 4,905 times it bought back lower, and those avoided falls are the reason to sell at all. This article asks where they came from.
+Article 002 found that the rule bought back higher than it sold in 80% of its buy-backs, yet, added up over all shares, it came out ahead of holding, because many shares it sold kept falling. This article follows every sale.
 
-The rule is the same: buy when the 50-day EMA crosses above the 200-day EMA, sell when it crosses back below, 0.20% cost on each buy and sell, prices up to the end of 2021. No order was placed.
+The rule is the same: buy when the 50-day EMA crosses above the 200-day EMA, sell when it crosses back below, 0.20% cost on each buy and sell, trading counted from 1 January 2021 to 17 November 2026. It sold 14,266 times. Each sale is judged by the buy-back price or, if there was no buy-back, by the last close. Only 30% of the sales (4,294) paid, meaning the rule bought back lower or the price still stood below the sale price.
 
-## Long spells did almost all of it
+## Three kinds of sale
 
-- Spells in cash of more than 250 days: 7,451, about 27% of all spells. They supplied 99.1% of the total of avoided falls.
-- Spells of up to 250 days: 19,661. Only 382 of them bought back lower.
-- The biggest 10% of the lower buy-backs, 490 spells or fewer than 2 in 100 of all spells, supplied 45% of the total.
+- Bought back within 250 days: 8,618 sales, 120 of them lower. They supplied 0.1% of the total of avoided falls.
+- Bought back after more than 250 days: 3,188 sales, 2,202 lower. They supplied 28%.
+- Not bought back by 17 November: 2,460 sales, 1,972 still below the sale price. They supplied 72%.
 
-## Year by year
+The benefit was concentrated. The biggest 10% of the sales that paid, 429 sales or 3 in 100 of all sales, supplied 55% of the total, and 363 of them were never bought back.
 
-For each year, Market Lab added up every sale made in it: how much higher or lower the rule bought back than it sold, on a logarithmic scale so that the parts add up. Below zero means the year's sales paid off on balance. Each year's sum was then shared out over the shares being tested that year.
+## The class of 2021
 
-Of the 58 years with sales, from 1964 to 2021, only four came out below zero:
+The rule sold 1,965 times in 2021. 324 of those sales were never bought back, and 251 of these shares more than halved after the sale. The **median**, meaning the middle one when all are lined up, stood 92% below the sale price. Sales made in 2021 supplied 46% of all the falls avoided in the whole period.
 
-- 1973: 35 sales, 14 bought back lower.
-- 2007: 1,176 sales, 411 lower. Spread over the 1,723 shares tested that year, they put the rule 6.6% ahead of holding.
-- 2008: 1,519 sales, 694 lower, 2.6% ahead per share.
-- 2014: 1,238 sales, 269 lower, 0.2% ahead per share.
+## Quarter by quarter
 
-Sales made in 2007 and 2008 alone, 2,695 of them, supplied 26.5% of all the avoided falls.
+Counting every sale this way, the rule's sales paid off on balance in 18 of the 24 quarters. Many of the recent ones are not settled: of 2,486 sales in 2026, 1,368 had not been bought back.
 
-## Crashes that were too quick
+Counting only sales that were bought back, just 5 quarters paid on balance: the four of 2021 and the first of 2022. Sales in the second quarter of 2021 put the rule 15.4% ahead of holding per share, counting every sale.
 
-In 1987 the rule sold 280 times. Only 18 of those (6.4%) bought back lower. The **median** price, meaning the middle one, 50 trading days after a 1987 sale was already 5.3% above the sale price.
-
-2020 was the costliest year in total, and per share the costliest since 1987. Of 2,026 sales, only 238 (11.7%) bought back lower, and the year's sales put the rule 14.6% behind holding per share. The median price stood 14.2% above the sale price 50 trading days after a 2020 sale. For sales in 2008, it stood 5.9% below.
-
-## The dot-com years did not pay here
-
-The shares that survived the 2000 to 2002 decline did not reward selling on balance. Sales in 2000, 2001 and 2002 each cost the rule between 0.9% and 4.6% per share. Many of the companies that collapsed in those years no longer exist, and they are missing from this data.
+The costliest quarter was the second of 2025, after the April drop. Of 822 sales, only 78 (9.5%) paid, and they put the rule 2.2% behind per share. Fifty trading days after a sale in that quarter, the median price stood 11.5% above the sale price. After a sale in the last quarter of 2021, it stood 5.7% below.
 
 ## Thai shares and US funds
 
-- Thai shares, 1990 to 2021: the sales paid off on balance in 6 of 29 years. In 2015, 2017, 2018 and 2019 the gain was under 1% per share; 1994 and 1996 had three sales and two.
-- US ETFs, 1994 to 2021: 5 of 25 years, namely 2000, 2007, 2008, 2009 and 2014. Sales in 2008 put the rule 10.0% ahead per fund.
+- Thai shares: 1,006 sales, 463 not bought back, with a median price 52% below the sale price. They supplied 91% of the avoided falls, and sales in 2022 alone 56%.
+- US ETFs: 4,598 sales, 962 not bought back, with a median price close to the sale price. They supplied 65% of the avoided falls, but here holding still ended ahead overall.
 
 ## The limits
 
-- **Missing losers.** Yahoo removes companies that went bankrupt or were delisted. They are most likely missing from exactly the crashes where selling helped, such as 2000 to 2002 and 2008.
+- **Missing losers.** Yahoo removes companies that went bankrupt or were delisted. Their sales, likely never undone, are missing.
 - **Hypothetical.** No order was placed. Real trading meets spreads, taxes and orders that do not fill.
-- **One way of counting.** Years are counted by the date of the sale, and the parts add up only on a logarithmic scale.
-- **More shares later.** Far more shares were tested in recent years than in the 1960s and 1970s.
-- **2022 onward was held back** and has not been evaluated.
+- **Judged at one date.** A sale not bought back is valued at the close of 17 November 2026. A later buy-back could be higher or lower, above all for recent sales.
+- **One way of counting.** The parts add up only on a logarithmic scale, which weighs collapses heavily. Quarters are counted by the date of the sale.
+- **A short period.** Under six years, and nothing was held back for a later check.
+- **Faulty prices left out.** 103 symbols with jumps that look like unadjusted splits were dropped.
 
 Nothing here is a forecast or a suggestion to buy or sell.

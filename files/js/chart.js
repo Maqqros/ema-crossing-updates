@@ -275,17 +275,21 @@
    */
   EMA.chart = (bars, chosen, st) => {
     const model = M();
-    const asset = chosen.kind === 'ema' ? chosen : Object.assign({}, chosen, { kind: 'ema', fast: 50, slow: 200 });
+    // EMA, SMA and price-level alerts draw their own lines; RSI and MACD alerts draw EMA 50 / 200 with their strip.
+    const own = chosen.kind === 'ema' || chosen.kind === 'sma' || chosen.kind === 'level';
+    const asset = own ? chosen : Object.assign({}, chosen, { kind: 'ema', fast: 50, slow: 200 });
+    const avg = asset.kind === 'sma' ? C.sma : C.ema;
+    const lineName = period => asset.kind === 'level' ? 'Level' : `${C.avgName(asset.kind)} ${period}`;
     const n = bars.closes.length;
     const ranges = EMA.catalog.ranges[asset.tf] || EMA.catalog.ranges['1d'];
     if (st.range == null || st.range >= ranges.length) st.range = asset.tf === '1h' ? 2 : 1;
     const details = !!model.settings.details;
-    const opts = new Set((details ? model.settings.chart || [] : []).concat(chosen.kind === 'ema' ? [] : [chosen.kind]));
+    const opts = new Set((details ? model.settings.chart || [] : []).concat(own ? [] : [chosen.kind]));
     const rich = details && C.full(bars); // open, high, low, volume and candles are shown
     const candles = opts.has('candles') && rich;
     const priceIsFast = asset.fast <= 1;
-    const fast = C.ema(bars.closes, asset.fast);
-    const slow = C.ema(bars.closes, asset.slow);
+    const fast = avg(bars.closes, asset.fast);
+    const slow = asset.kind === 'level' ? bars.closes.map(() => asset.slow) : avg(bars.closes, asset.slow);
     const crosses = C.crosses(chosen, bars.closes);
     const bands = opts.has('bands') ? C.bollinger(bars.closes) : null;
     const rsi = opts.has('rsi') ? C.rsi(bars.closes) : null;
@@ -403,8 +407,8 @@
       head.textContent = scrub == null ? `Latest ${C.tfWord(asset.tf)} close · ${C.barDate(bars.dates[n - 1], asset.tf)}` : C.barDate(bars.dates[at], asset.tf);
       legend.replaceChildren(
         item(priceIsFast ? U.color('fast') : U.color('muted'), candles ? 'Close' : 'Price', bars.closes[at]),
-        priceIsFast ? '' : item(U.color('fast'), 'EMA ' + asset.fast, fast[at]),
-        item(U.color('slow'), 'EMA ' + asset.slow, slow[at]));
+        priceIsFast ? '' : item(U.color('fast'), lineName(asset.fast), fast[at]),
+        item(U.color('slow'), lineName(asset.slow), slow[at]));
       if (rich) {
         ohlc.textContent = `Open ${C.money(bars.opens[at])}   High ${C.money(bars.highs[at])}   Low ${C.money(bars.lows[at])}` +
           (bars.volumes[at] > 0 ? `   Vol ${C.compact(bars.volumes[at])}` : '');

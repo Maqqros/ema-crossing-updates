@@ -1,59 +1,83 @@
 {
  "format": 1,
- "version": 12,
- "name": "1.2",
+ "version": 13,
+ "name": "1.3",
  "minApi": 1,
- "notes": "Tap a scan find to see its full chart; symbols new to the scan, like Major assets, show at once; the Scan tab no longer jumps to the top during Scan now.",
- "id": "ae6d368f",
- "built": "26 Nov 2026 05:33",
+ "notes": "Live price on the asset screen; SMA 50/200 and price level alerts; Restore asks first; three new articles and 001 to 004 rewritten; Retry update for a set-aside update.",
+ "id": "49c95427",
+ "built": "28 Nov 2026 13:11",
  "files": {
   "app.css": {
    "sha256": "a1eecd85fbcbb81e3de84c1e9a38bc41127d979b3248f0345f17748f292f8e55",
    "size": 14785
   },
   "articles/001-2026-11-20-most-trades-lost.html": {
-   "sha256": "a7b6cb67db1b0e21f8764ec7ff07e2fefcd47efa5d11d5e43db34adf8a2ff129",
-   "size": 385971
+   "sha256": "77b23670cd512f1b5374ec080e60496c5a0ec8648618881c292f2f65e605776c",
+   "size": 284892
   },
   "articles/001-2026-11-20-most-trades-lost.md": {
-   "sha256": "fc2c4e8f7f5b64aac9d8df13c188d9a3f6b5120981ad4e3ed525aea829cbf5c1",
-   "size": 3978
+   "sha256": "6b79479551a37132dca0e80d190d4e90634ec2baaa957aff1c8be268dd2e807e",
+   "size": 3957
   },
   "articles/002-2026-11-21-bought-back-higher.html": {
-   "sha256": "a8d623145b13dd465c8ac640fa7dec37472917170a18da1fefe14e1e3e711c99",
-   "size": 206601
+   "sha256": "76d02b54ec2dc76384be94fee1a93b4506cae82e796a717d3490b3b81f41b72e",
+   "size": 82893
   },
   "articles/002-2026-11-21-bought-back-higher.md": {
-   "sha256": "a465dbba1a5a71d3f189a459006c35cccf585887843da81c1d4d82759e07a889",
-   "size": 4069
+   "sha256": "131bbd5ff9fe5106a8bd08e2b39d67b34f8c2b1a04570104e5a0ddd8ebdf00dd",
+   "size": 4132
   },
   "articles/003-2026-11-21-ema-or-sma.html": {
-   "sha256": "41f7a4ab327b77f435188ff1d85f4ad5ca1c8beccddd27920bc78ef99c14890e",
-   "size": 517810
+   "sha256": "807a84df857962a6547069c15b2dad5aa3f481d311c8f94f8157732ca26c51f5",
+   "size": 277747
   },
   "articles/003-2026-11-21-ema-or-sma.md": {
-   "sha256": "48509a793795d54d26420843024fe51d542dbca0c6ebe19fa10b728618dbb412",
-   "size": 3483
+   "sha256": "2296ce00cebfecc1dae437c5fce85ee3ef83c7374559f85274d355842864fb05",
+   "size": 3787
   },
   "articles/004-2026-11-21-long-spells-that-paid.html": {
-   "sha256": "a00daeeb820ab2e864791fb763d4b56eb579265821ce0b4292b669817c34b568",
-   "size": 368241
+   "sha256": "24c260d651bdc079ac0fd4df9db7e1ed5b8c710c650f7cbe4af2da9d84966d52",
+   "size": 370411
   },
   "articles/004-2026-11-21-long-spells-that-paid.md": {
-   "sha256": "467acaee810673c432169065bfceea226ffc97bdf414c1ea5f69fb55bf5969e8",
-   "size": 3788
+   "sha256": "d0656945b6303304633704fcce1de5e15cc21ec7f974e830f09f6afe00a7f8d7",
+   "size": 3770
+  },
+  "articles/005-2026-11-24-april-2025-whipsaw.html": {
+   "sha256": "cf5850958ec27b735039627270099aebf6fd744d23e457d20a1a9092049ab2df",
+   "size": 119082
+  },
+  "articles/005-2026-11-24-april-2025-whipsaw.md": {
+   "sha256": "b996a21c3474171515616a1c8ced47c985137a400a2125179f9f767e9e897c05",
+   "size": 3879
+  },
+  "articles/006-2026-11-24-random-pick-cut-loss.html": {
+   "sha256": "cb31d084e4b35005cd38ad6b99b33aa863f71771183c86d4cf2ce50ea5ca9d1e",
+   "size": 366107
+  },
+  "articles/006-2026-11-24-random-pick-cut-loss.md": {
+   "sha256": "b4ae2fef0487df7a4a557ce8f85664c4f3e8c9aa3b0a4db47c93f27b663be977",
+   "size": 3443
+  },
+  "articles/007-2026-11-24-traits-known-in-advance.html": {
+   "sha256": "34d7cb81d8eeac1dd35c8bb4ffc1b46fa1f2a373b4b29fc427ea95659ba222f5",
+   "size": 104651
+  },
+  "articles/007-2026-11-24-traits-known-in-advance.md": {
+   "sha256": "5fd19e5ab09c147438fa8b637e6e1ac1af6e456ba761dd4139008fa448fe0795",
+   "size": 3940
   },
   "background.html": {
    "sha256": "013ef6cb99e10fb170a889d70d8fb220209685c99776c9e191a417e019d64d16",
    "size": 1591
   },
   "data/catalog.json": {
-   "sha256": "767bab9882e093ff655247f8f8eb0dcb4644662618ac2c18831a580881910b57",
-   "size": 4624
+   "sha256": "a99a2b81905a2e6bd60c0ea7f7a582fa004e8b44a795206fa772ff7df44a1b26",
+   "size": 4663
   },
   "data/changelog.md": {
-   "sha256": "5e6b1eb0de7e7dec68c60a2c221ef403fe922d6c1389ec64ab5586e3e07d52a6",
-   "size": 16331
+   "sha256": "67f480ae328303f54e5275e7c6408795ee17ac6c188e59d27b51c63cb86150c0",
+   "size": 18711
   },
   "data/scan-seed.json": {
    "sha256": "81a33f9c9999395cfb80eb676ef03367235fc277e3b705d7ec336045d150e5b1",
@@ -64,44 +88,48 @@
    "size": 15147
   },
   "index.html": {
-   "sha256": "8d1c4181065c81684d8201329218179cb9fc462a3b593deda61fb4d4ff22a366",
-   "size": 723
+   "sha256": "68d81c43b1e78a83409f40a54bd0fb890402bf4441e17839be38e920835151f6",
+   "size": 758
   },
   "js/app.js": {
-   "sha256": "047c50e847744cf82132f905b5228e7cb654fa5a43ba936c910b789ab69b237f",
-   "size": 8654
+   "sha256": "0be6540ca383e830a92205f54974343574d2757a430230996f5c60b0775db722",
+   "size": 9139
   },
   "js/chart.js": {
-   "sha256": "bfb6ae297492adab6aa726679280bd5ee457e1da8ffca66348d8a251193e196a",
-   "size": 21228
+   "sha256": "508b9bc9791d0cee71aad4fe539176460b0ec115dfd31d7caa9cecdd3756a6a5",
+   "size": 21617
   },
   "js/check.js": {
-   "sha256": "9b06f1d5ea269b49f9a088d4a2ae72410da6effc61520c5a5d19dd1b98cccbe9",
-   "size": 17240
+   "sha256": "dbd561cc3fc02b26a4682b06d794146bfd56bea93908d343cbffed5eabca177d",
+   "size": 17536
   },
   "js/core.js": {
-   "sha256": "cb884025e1059b63cf3e3aed8b7765c52412d26ce585db68082e1710014f5f07",
-   "size": 38212
+   "sha256": "07fb5ac0fbc71f5bd737278f2d704a4fe99f0ee590d7f641df6475e759a79dad",
+   "size": 39583
   },
   "js/data.js": {
    "sha256": "3da79a8cc799575454b9aee7db6c88aa1365f2bc4bc40c9daf6a06ea2acca852",
    "size": 6807
   },
   "js/host.js": {
-   "sha256": "e9123c691a71d3c8aa061d7625a660dab09a80319ff241e433e7a2e894dd7b4a",
-   "size": 3099
+   "sha256": "dc116872e819d6526d8a42e09fbff56a47336d3a4f98f537bdec26bde7cedc18",
+   "size": 3546
+  },
+  "js/live.js": {
+   "sha256": "47c729fb4a8860fd31eab43237e855d1027fc5629eb17fa0459c8a8dd2ec68f2",
+   "size": 5822
   },
   "js/model.js": {
-   "sha256": "c994f274d452678effd921db83e33a72feb3384ec42e37c33bcaddde3a68b1dd",
-   "size": 21145
+   "sha256": "74097da2594a98b15249d8aeb133dfe752e363921e0ad39f98c32b20cdbf1aa1",
+   "size": 21856
   },
   "js/scan.js": {
    "sha256": "56a984372dcf35bddb2f30eb269686d768e9d5fad87f1cdd577a940d9a5aeb36",
    "size": 20678
   },
   "js/screens.js": {
-   "sha256": "10eac7512b6fcad877298c0c33478842774fa1b11928f8184d2359326dc07f3d",
-   "size": 69595
+   "sha256": "8debac5cc2dcd0ae49583fa14cede8dec39593e2521e712d68a33d14e4029cca",
+   "size": 75241
   },
   "js/ui.js": {
    "sha256": "234019f80748f8d9ee5f0375aac936c1098ff0f677b579c8da543a0563e475ea",

@@ -320,6 +320,10 @@
     if (s.updateUrl) {
       kids.push(h('div', { class: 't-body-s muted mt8' }, u.checked ? `Last checked ${C.stamp(u.checked)}.` : 'Not checked yet.'));
     }
+    if (u.status === 'bad') {
+      kids.push(h('div', { class: 't-body-m mt12' }, 'The newest update on the server did not start on this phone, so the app stays on the version that works. Retry update deletes it, downloads it again and tries it once more.'),
+        h('div', { class: 'mt8' }, U.btn(M.updating ? 'Working…' : 'Retry update', () => M.checkUpdates(false, true), 'outline', M.updating)));
+    }
     if (u.status === 'engine') {
       kids.push(h('div', { class: 't-body-m mt12' }, 'The newest update on the server needs a newer engine than this one. Install the new engine to get it.'));
     }
@@ -923,14 +927,50 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
   // --- the asset screen ---
   const stat = (label, value) => h('div', { class: 'stat' }, h('div', { class: 't-label-s muted' }, label || ' '), h('div', { class: 't-body-m one-line', style: 'font-weight:600' }, value || ' '));
 
-  function priceHeader(q) {
+  /** The price at the top of a page. With `symbol`, a live price of it (EMA.live) is shown when newer. */
+  function priceHeader(q, symbol) {
+    const v = symbol ? liveView(q, symbol) : null;
+    const price = v ? v.price : q.price, change = v ? v.change : q.change;
     return [h('div', { class: 'hrow bottom', style: 'padding-top:4px' },
-      h('div', { class: 't-display' }, C.money(q.price)),
+      h('div', { class: 't-display', id: symbol ? 'livep' : null }, C.money(price)),
       h('div', { class: 't-title-m muted', style: 'margin:0 0 6px 8px;font-weight:500' }, q.currency),
-      q.change != null ? h('div', { class: 't-title-m ' + (q.change >= 0 ? 'up' : 'down'), style: 'margin:0 0 6px 12px;font-weight:500' }, C.signed(q.change)) : null),
-    h('div', { class: 't-body-s muted', style: 'margin-bottom:16px' },
-      q.live && q.at > 0 ? 'Delayed price · ' + C.stamp(q.at * 1000) : 'Close on ' + C.niceDate(q.closeDate, true))];
+      h('div', { class: 't-title-m ' + (change == null ? '' : change >= 0 ? 'up' : 'down'), id: symbol ? 'livec' : null, style: 'margin:0 0 6px 12px;font-weight:500' },
+        change != null ? C.signed(change) : '')),
+    h('div', { class: 't-body-s muted', id: symbol ? 'liven' : null, style: 'margin-bottom:16px' },
+      v ? v.note : q.live && q.at > 0 ? 'Delayed price · ' + C.stamp(q.at * 1000) : 'Close on ' + C.niceDate(q.closeDate, true))];
   }
+
+  /** The live price of `symbol` when it is newer than the quote: {price, change, note}, or null. */
+  function liveView(q, symbol) {
+    const p = EMA.live.priceOf(symbol);
+    if (!p || p.at <= q.at * 1000) return null;
+    const base = q.live ? q.prev : q.price; // the close the live price moves away from
+    const age = Date.now() - p.at;
+    const d = new Date(p.at);
+    const time = C.stamp(p.at, d.toDateString() === new Date().toDateString()) + ':' + String(d.getSeconds()).padStart(2, '0');
+    const behind = EMA.live.behind(age);
+    return {
+      price: p.price, change: base ? (p.price - base) / base * 100 : null,
+      note: (behind ? 'Delayed' : 'Live') + ' · ' + p.source + ' · price at ' + time + (behind ? ' · ' + behind : '')
+    };
+  }
+
+  /** A new live price: put it in the header of the open symbol page without drawing the page again. */
+  EMA.live.onPrice(symbol => {
+    const el = document.getElementById('livep');
+    const q = C.quoteOf(M.barsOf(symbol));
+    if (!el || !q) return;
+    const v = liveView(q, symbol);
+    if (!v) return;
+    el.textContent = C.money(v.price);
+    const c = document.getElementById('livec');
+    if (c) {
+      c.textContent = v.change != null ? C.signed(v.change) : '';
+      c.className = 't-title-m ' + (v.change == null ? '' : v.change >= 0 ? 'up' : 'down');
+    }
+    const n = document.getElementById('liven');
+    if (n) n.textContent = v.note;
+  });
 
   /** The latest session's open, high, low and volume, the previous close, and the 52-week range. From daily bars. */
   function daySummary(bars) {
@@ -954,7 +994,8 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
       title = `RSI ${e.emaFast.toFixed(0)} · ` + (state === 'above' ? `above ${a.slow}` : state === 'below' ? `below ${a.fast}` : `between ${a.fast} and ${a.slow}`);
     } else if (a.kind === 'rsi') title = `RSI ${a.fast} / ${a.slow}`;
     else if (a.kind === 'macd') title = settled ? `MACD is ${state} its signal line` : `MACD ${a.fast} / ${a.slow}`;
-    else title = settled ? `${C.label(a.fast)} is ${state} EMA ${a.slow}` : C.pairLabel(a.fast, a.slow);
+    else if (a.kind === 'level') title = settled ? `Price is ${state} ${C.levelText(a.slow)}` : `Price level ${C.levelText(a.slow)}`;
+    else title = settled ? `${C.label(a.fast, a.kind)} is ${state} ${C.avgName(a.kind)} ${a.slow}` : C.pairLabel(a.fast, a.slow, '1d', a.kind);
     const closes = `${C.tfWord(a.tf)} closes`;
     const lead = a.tf === '1d' ? '' : closes[0].toUpperCase() + closes.slice(1) + ' · ';
     let sub;
@@ -1007,6 +1048,27 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
     return [h('div', { class: 'section' }, `How it went before · ${C.assetLabel(asset)}`), U.card(null, kids)];
   }
 
+  /** Asks before a backup replaces the watchlists: says what the file holds and what is on the phone now. */
+  V.confirmRestore = (backup, restore) => {
+    const symbols = list => new Set(list.map(a => a.symbol)).size;
+    const count = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+    const names = backup.lists && backup.lists.length ? backup.lists.map(l => String(l.name || '')).filter(Boolean) : [];
+    const there = `${count(symbols(backup.assets), 'asset')} with ${count(backup.assets.length, 'crossing')}` +
+      (names.length ? ` on ${count(names.length, 'list')} (${names.join(', ')})` : ' on one list');
+    const here = `${count(symbols(M.assets), 'asset')} with ${count(M.assets.length, 'crossing')} on ${count(M.lists.length, 'list')}`;
+    U.dialog(close => ({
+      title: 'Replace your watchlists?',
+      body: h('div', null,
+        h('div', { class: 't-body-m' }, `The backup holds ${there}.`),
+        h('div', { class: 't-body-m mt8' }, `It replaces everything on this phone now: ${here}, and the settings saved in the backup.`),
+        h('div', { class: 't-body-s muted mt8' }, 'To keep what you have, tap Cancel and save a backup first.')),
+      actions: [['Cancel', close], ['Replace', () => {
+        close();
+        restore();
+      }, 'danger']]
+    }));
+  };
+
   function renameDialog(g) {
     const input = h('input', { id: 'rename', type: 'text', value: g.name, maxlength: 40, autocomplete: 'off' });
     U.dialog(close => ({
@@ -1049,6 +1111,25 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
     }));
   }
 
+  /** Asks for a price; the alert comes when a close crosses it, either way. */
+  function levelDialog(g, frame, bars) {
+    const last = bars && bars.closes.length ? bars.closes[bars.closes.length - 1] : null;
+    const input = h('input', { id: 'level', type: 'text', inputmode: 'decimal', autocomplete: 'off' });
+    U.dialog(close => ({
+      title: `Price level (${C.tfWord(frame)} close)`,
+      body: h('div', null,
+        h('div', { class: 't-body-m muted' }, `You get an alert when a ${C.tfWord(frame)} close of ${g.name} goes above this price, and when it goes back below it.` +
+          (last != null ? ` The latest close is ${C.levelText(last)}.` : '')),
+        h('label', { class: 'field mt12' }, h('span', null, 'Price'), input, h('small', null, 'e.g. 4000'))),
+      actions: [['Cancel', close], ['Add alert', () => {
+        const v = Number(input.value.replace(/[,\s]/g, ''));
+        if (!(Number.isFinite(v) && v > 0)) return U.toast('Type a price above 0.');
+        close();
+        if (!g.items.some(a => a.kind === 'level' && a.slow === v && a.tf === frame)) M.toggle(g.symbol, 1, v, frame, 'level');
+      }]]
+    }));
+  }
+
   function customDialog(g, frame) {
     const digits = e => {
       e.target.value = e.target.value.replace(/\D/g, '').slice(0, 3);
@@ -1087,7 +1168,7 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
     const cat = EMA.catalog;
     const kids = [];
 
-    if (quote) kids.push(priceHeader(quote));
+    if (quote) kids.push(priceHeader(quote, symbol));
     if (derived) kids.push(h('div', { class: 't-body-s muted', style: 'margin-bottom:12px' }, derived.note));
     if (M.settings.details) kids.push(daySummary(M.barsOf(symbol)));
     // The chart's timeframe: the chosen crossing's, unless another one is picked to look at.
@@ -1139,9 +1220,16 @@ Pack ${EMA.pack.version} · id ${EMA.pack.id || 'none'}${EMA.pack.built ? ' · b
       h('div', { class: 'wrapflow mt8' },
         shown.map(p => U.chip(C.pairLabel(p[0], p[1]), mine.some(a => a.fast === p[0] && a.slow === p[1]), () => M.toggle(symbol, p[0], p[1], d.frame))),
         U.chip('Custom', false, () => customDialog(g, d.frame), 'add')),
+      h('div', { class: 'wrapflow mt8' }, (cat.smaPresets || []).map(([lo, hi]) => U.chip(C.pairLabel(lo, hi, '1d', 'sma'),
+        g.items.some(a => a.tf === d.frame && a.kind === 'sma' && a.fast === lo && a.slow === hi), () => M.toggle(symbol, lo, hi, d.frame, 'sma')))),
       h('div', { class: 'wrapflow mt8' }, cat.indicators.map(([kind, lo, hi]) => U.chip(kind === 'rsi' ? `RSI ${lo} / ${hi}` : `MACD ${lo} / ${hi}`,
         g.items.some(a => a.tf === d.frame && a.kind === kind && a.fast === lo && a.slow === hi), () => M.toggle(symbol, lo, hi, d.frame, kind)))),
-      h('div', { class: 't-body-s muted mt8' }, 'RSI alerts when the 14-bar RSI rises above 70 or falls below 30. MACD alerts when the MACD line crosses its signal line.'),
+      h('div', { class: 'wrapflow mt8' },
+        g.items.filter(a => a.tf === d.frame && a.kind === 'level').map(a => U.chip(`Price level ${C.levelText(a.slow)}`, true, () => M.toggle(symbol, 1, a.slow, d.frame, 'level'))),
+        U.chip('Price level', false, () => levelDialog(g, d.frame, bars), 'add')),
+      h('div', { class: 't-body-s muted mt8' }, 'SMA uses simple averages, which many charts mean by golden cross; their dates differ from the EMA ones. ' +
+        'RSI alerts when the 14-bar RSI rises above 70 or falls below 30. MACD alerts when the MACD line crosses its signal line. ' +
+        'A price level alerts when the close goes from one side of the price you set to the other, up or down.'),
       h('div', { class: 't-body-s muted mt8' }, d.frame === '1wk' ? "Weekly crossings use each week's final close. They are slower and give fewer false signals."
         : d.frame === '1h' ? 'Hourly crossings use each finished hour of regular trading, and are checked about once an hour.'
           : 'EMA 50 / 200 is the classic golden cross and death cross. "Price / EMA" alerts when the closing price itself crosses that average.'));

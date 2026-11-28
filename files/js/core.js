@@ -10,14 +10,16 @@ window.EMA = window.EMA || {};
   // --- one watched crossing -------------------------------------------------------------------------
   // {id, name, symbol, fast, slow, tf, muted, kind}. `fast` 1 means the price itself. `tf` is "1d", "1wk" or "1h".
   // `kind` is "ema" (two averages), "macd" (the MACD line of fast and slow against its 9-bar signal line) or
-  // "rsi" (the 14-bar RSI leaving the band between the levels fast and slow, usually 30 and 70).
+  // "rsi" (the 14-bar RSI leaving the band between the levels fast and slow, usually 30 and 70), "sma" (two simple
+  // averages, otherwise like "ema") or "level" (the close crossing a fixed price: `fast` is 1 and `slow` is that price).
   C.asset = o => ({
     id: String(o.id), name: String(o.name), symbol: String(o.symbol), fast: Number(o.fast), slow: Number(o.slow),
     tf: o.tf || '1d', muted: !!o.muted, kind: o.kind || 'ema'
   });
   C.key = a => (a.tf === '1d' ? `${a.symbol}|${a.fast}|${a.slow}` : `${a.symbol}|${a.fast}|${a.slow}|${a.tf}`) + (a.kind === 'ema' ? '' : '|' + a.kind);
-  C.validAsset = a => !!a.symbol.trim() && a.fast >= 1 && a.slow > a.fast && a.slow <= 400 && ['1d', '1wk', '1h'].includes(a.tf) &&
-    ['ema', 'macd', 'rsi'].includes(a.kind) && (a.kind !== 'rsi' || a.slow < 100);
+  C.validAsset = a => !!a.symbol.trim() && ['1d', '1wk', '1h'].includes(a.tf) && ['ema', 'sma', 'macd', 'rsi', 'level'].includes(a.kind) &&
+    (a.kind === 'level' ? a.fast === 1 && Number.isFinite(a.slow) && a.slow > 0
+      : a.fast >= 1 && a.slow > a.fast && a.slow <= 400 && (a.kind !== 'rsi' || a.slow < 100));
   C.tfWord = tf => tf === '1wk' ? 'weekly' : tf === '1h' ? 'hourly' : 'daily';
   C.unit = tf => tf === '1wk' ? 'weeks' : tf === '1h' ? 'hours' : 'days';
 
@@ -147,7 +149,7 @@ window.EMA = window.EMA || {};
   };
 
   /** Bars needed before a crossing can be told. */
-  C.need = a => a.kind === 'macd' ? a.slow + 9 : a.kind === 'rsi' ? 16 : a.slow + 1;
+  C.need = a => a.kind === 'macd' ? a.slow + 9 : a.kind === 'rsi' ? 16 : a.kind === 'level' ? 2 : a.slow + 1;
 
   /** The two lines whose crossing is watched. For RSI both are the RSI itself: it is compared with levels, not a line. */
   C.lines = (a, closes) => {
@@ -159,6 +161,8 @@ window.EMA = window.EMA || {};
       const r = C.rsi(closes);
       return [r, r];
     }
+    if (a.kind === 'level') return [closes, closes.map(() => a.slow)];
+    if (a.kind === 'sma') return [C.sma(closes, a.fast), C.sma(closes, a.slow)];
     return [C.ema(closes, a.fast), C.ema(closes, a.slow)];
   };
 
@@ -233,9 +237,10 @@ window.EMA = window.EMA || {};
 
     // Early warning: the averages are within `nearPct` of each other and the gap is shrinking. Given once per
     // approach; it is armed again only after they drift apart or cross. Not for hourly bars, which would nag.
-    const gap = asset.kind === 'ema' && es !== 0 ? (ef - es) / es * 100 : null;
+    const avg = asset.kind === 'ema' || asset.kind === 'sma';
+    const gap = avg && es !== 0 ? (ef - es) / es * 100 : null;
     let near = false;
-    if (nearPct > 0 && asset.kind === 'ema' && asset.tf !== '1h' && gap != null && n >= 4 && !(last && last.index >= n - 3)) {
+    if (nearPct > 0 && avg && asset.tf !== '1h' && gap != null && n >= 4 && !(last && last.index >= n - 3)) {
       const f3 = f[n - 4], s3 = s[n - 4];
       const before = f3 != null && s3 != null && s3 !== 0 ? (f3 - s3) / s3 * 100 : null;
       const narrowing = before != null && before * gap > 0 && Math.abs(gap) < Math.abs(before);
@@ -280,7 +285,11 @@ window.EMA = window.EMA || {};
   const fixed = (v, digits) => v.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
   C.money = v => Math.abs(v) >= 1000 ? fixed(v, 0) : fixed(v, 2);
   C.signed = (v, digits = 2) => (v >= 0 ? '+' : '') + v.toFixed(digits) + '%';
-  C.label = period => period <= 1 ? 'Price' : 'EMA ' + period;
+  C.label = (period, kind = 'ema') => period <= 1 ? 'Price' : C.avgName(kind) + ' ' + period;
+  /** "EMA" or "SMA": the kind of average a crossing watches. */
+  C.avgName = kind => kind === 'sma' ? 'SMA' : 'EMA';
+  /** A price level as typed: up to 2 decimals from 10 up, up to 4 below 10, without trailing zeros. */
+  C.levelText = v => fixed(v, Math.abs(v) >= 10 ? 2 : 4).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
 
   /** 1,234,567 becomes "1.23M". For volumes, where the exact figure does not matter. */
   C.compact = v => {
@@ -300,10 +309,11 @@ window.EMA = window.EMA || {};
     }
     const frame = asset.tf === '1d' ? '' : ` (${C.tfWord(asset.tf)})`;
     const body = `${asset.symbol} closed at ${px} on ${alert.date}.`;
+    const avg = C.avgName(asset.kind);
     if (alert.kind === 'near') {
-      const what = asset.fast <= 1 ? 'Price' : 'EMA ' + asset.fast;
+      const what = C.label(asset.fast, asset.kind);
       return {
-        title: `${asset.name}: ${what} is closing in on EMA ${asset.slow}${frame}`,
+        title: `${asset.name}: ${what} is closing in on ${avg} ${asset.slow}${frame}`,
         body: `${Math.abs(alert.gap).toFixed(1)}% ${alert.up ? 'below' : 'above'} it and narrowing. ${body} No crossing yet.`
       };
     }
@@ -312,29 +322,34 @@ window.EMA = window.EMA || {};
       return { title: alert.up ? `${asset.name}: RSI rose above ${asset.slow}${frame}` : `${asset.name}: RSI fell below ${asset.fast}${frame}`, body };
     }
     if (asset.kind === 'macd') return { title: `${asset.name}: MACD crossed ${word} its signal line${frame}`, body };
+    if (asset.kind === 'level') return { title: `${asset.name}: closed ${word} ${C.levelText(asset.slow)}${frame}`, body };
     return {
-      title: asset.fast <= 1 ? `${asset.name}: price closed ${word} EMA ${asset.slow}${frame}` : `${asset.name}: EMA ${asset.fast} crossed ${word} EMA ${asset.slow}${frame}`,
+      title: asset.fast <= 1 ? `${asset.name}: price closed ${word} ${avg} ${asset.slow}${frame}` : `${asset.name}: ${avg} ${asset.fast} crossed ${word} ${avg} ${asset.slow}${frame}`,
       body
     };
   };
 
   const framed = (tf, base) => tf === '1wk' ? 'Weekly ' + base : tf === '1h' ? 'Hourly ' + base : base;
-  C.pairLabel = (fast, slow, tf = '1d') => framed(tf, fast <= 1 ? `Price / EMA ${slow}` : `EMA ${fast} / ${slow}`);
+  C.pairLabel = (fast, slow, tf = '1d', kind = 'ema') => framed(tf, fast <= 1 ? `Price / ${C.avgName(kind)} ${slow}` : `${C.avgName(kind)} ${fast} / ${slow}`);
 
   /** The name of one watched crossing, whatever its kind. */
-  C.assetLabel = a => a.kind === 'rsi' ? framed(a.tf, `RSI ${a.fast} / ${a.slow}`) : a.kind === 'macd' ? framed(a.tf, `MACD ${a.fast} / ${a.slow}`) : C.pairLabel(a.fast, a.slow, a.tf);
+  C.assetLabel = a => a.kind === 'rsi' ? framed(a.tf, `RSI ${a.fast} / ${a.slow}`) : a.kind === 'macd' ? framed(a.tf, `MACD ${a.fast} / ${a.slow}`)
+    : a.kind === 'level' ? framed(a.tf, `Price level ${C.levelText(a.slow)}`) : C.pairLabel(a.fast, a.slow, a.tf, a.kind);
 
   C.crossText = (a, up) => {
     const word = up ? 'above' : 'below';
     const base = a.kind === 'rsi' ? (up ? `RSI rose above ${a.slow}` : `RSI fell below ${a.fast}`)
       : a.kind === 'macd' ? `MACD crossed ${word} its signal line`
-        : a.fast <= 1 ? `Price closed ${word} EMA ${a.slow}` : `EMA ${a.fast} crossed ${word} EMA ${a.slow}`;
+        : a.kind === 'level' ? `Closed ${word} ${C.levelText(a.slow)}`
+          : a.fast <= 1 ? `Price closed ${word} ${C.avgName(a.kind)} ${a.slow}` : `${C.avgName(a.kind)} ${a.fast} crossed ${word} ${C.avgName(a.kind)} ${a.slow}`;
     return a.tf === '1d' ? base : `${base} (${C.tfWord(a.tf)})`;
   };
 
   /** "Crossed above", or for RSI "Rose above 70". */
-  C.eventWord = (a, up) => a.kind === 'rsi' ? (up ? `Rose above ${a.slow}` : `Fell below ${a.fast}`) : up ? 'Crossed above' : 'Crossed below';
-  C.afterWord = (a, up) => a.kind === 'rsi' ? (up ? `After rising above ${a.slow}` : `After falling below ${a.fast}`) : up ? 'After crossing above' : 'After crossing below';
+  C.eventWord = (a, up) => a.kind === 'rsi' ? (up ? `Rose above ${a.slow}` : `Fell below ${a.fast}`)
+    : a.kind === 'level' ? (up ? 'Closed above' : 'Closed below') : up ? 'Crossed above' : 'Crossed below';
+  C.afterWord = (a, up) => a.kind === 'rsi' ? (up ? `After rising above ${a.slow}` : `After falling below ${a.fast}`)
+    : a.kind === 'level' ? (up ? 'After closing above' : 'After closing below') : up ? 'After crossing above' : 'After crossing below';
 
   // --- dates ----------------------------------------------------------------------------------------
   const two = n => String(n).padStart(2, '0');
@@ -402,7 +417,7 @@ window.EMA = window.EMA || {};
     const price = b.price != null ? b.price : b.closes[n - 1];
     const prev = b.price != null ? b.prev : (n >= 2 ? b.closes[n - 2] : null);
     const change = prev != null && prev !== 0 ? (price - prev) / prev * 100 : null;
-    return { price, change, live: !!b.live, at: b.priceAt || 0, closeDate: b.dates[n - 1], currency: b.currency || '' };
+    return { price, prev, change, live: !!b.live, at: b.priceAt || 0, closeDate: b.dates[n - 1], currency: b.currency || '' };
   };
 
   /**

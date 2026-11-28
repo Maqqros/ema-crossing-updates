@@ -85,6 +85,7 @@
     if (drawn === route + '/' + V.state.tab) screen.style.animation = 'none';
     drawn = route + '/' + V.state.tab;
     root.replaceChildren(screen);
+    EMA.live.follow(route.startsWith('d:') ? route.slice(2) : null);
     jobs.forEach(job => job());
     root.querySelectorAll('[data-keep]').forEach(el => {
       if (scroll[el.dataset.keep]) el.scrollTop = scroll[el.dataset.keep];
@@ -188,6 +189,10 @@
   });
 
   (async () => {
+    // Each step of the start goes to the phone's log, so a start that does not finish shows where it stopped.
+    const t0 = Date.now();
+    const step = what => host.log(`start: ${what} after ${Date.now() - t0} ms (pack ${host.info.pack || 'built-in'})`);
+    step('script');
     try {
       await EMA.boot();
     } catch (e) {
@@ -195,17 +200,21 @@
       document.getElementById('app').textContent = 'EMA Crossing could not start: ' + e.message;
       return;
     }
+    step('boot');
     syncInsets();
     // Some phones report the bars' heights only after the page has started, and that first report can be missed:
     // ask again a few times, so the app never sits under the phone's own buttons.
     for (const ms of [300, 1000, 3000]) setTimeout(syncInsets, ms);
     M.reload();
+    step('reload');
     EMA.theme();
     if (host.info.widgetSetup) route = 'widget';
     else if (host.info.route === 'scan') V.state.tab = V.SCAN;
     else if (host.info.route && !host.info.route.startsWith('s:') && (!host.info.route.startsWith('d:') || M.has(host.info.route.slice(2)))) route = host.info.route;
     EMA.draw();
+    step('draw');
     host.ready();
+    step('ready');
     if (route === 'widget') return;
 
     K.schedule();
@@ -223,7 +232,7 @@
       M.staleHours = Math.floor(idle / 3600000);
       EMA.draw();
     }
-    const bars = Array.from(M.bars.values());
+    const bars = Array.from(M.bars.values()).filter(Boolean); // a symbol with nothing saved is kept as null
     if (M.assets.length && (stale() || !bars.some(b => b.price != null) || bars.some(b => !EMA.core.full(b)))) M.refresh(true);
     if (M.settings.updateUrl && Date.now() - (M.update.checked || 0) > 6 * 3600000) M.checkUpdates(true);
   })();

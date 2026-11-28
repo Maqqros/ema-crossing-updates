@@ -4,6 +4,16 @@
 window.EMA = window.EMA || {};
 (function (EMA) {
   const H = window.Host;
+  // Any error the pack does not catch goes to the phone's log under "EMA", with where it happened.
+  const report = (what, e) => {
+    try {
+      H.log(what + ': ' + (e && e.stack ? e.stack : String(e)));
+    } catch (x) {
+      // no engine (a test page)
+    }
+  };
+  window.addEventListener('error', e => report('error', e.error || e.message));
+  window.addEventListener('unhandledrejection', e => report('unhandled', e.reason));
   const waiting = new Map();
   const listeners = [];
   let next = 1;
@@ -54,7 +64,7 @@ window.EMA = window.EMA || {};
     keys: prefix => json(H.keys(prefix), []),
     legacy: () => json(H.legacy(), {}),
     legacyClear: () => H.legacyClear(),
-    /** A slow call ("http", "updatePack", "installEngine", "saveFile", "pickFile", "shareFile", "askNotifications"). Never rejects: look at `ok`. */
+    /** A slow call ("http", "updatePack", "retryPack", "installEngine", "saveFile", "pickFile", "shareFile", "askNotifications"). Never rejects: look at `ok`. */
     call: (name, args) => new Promise(done => {
       const id = next++;
       waiting.set(id, done);

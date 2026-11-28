@@ -332,12 +332,14 @@
   /**
    * Asks the update server for a newer pack. With `background` it asks at most every 12 hours.
    * Gives null when there was nothing to do, else {ok, status, message}: `message` is one sentence for the user.
+   * With `retry`, a version this phone set aside is deleted, downloaded again and tried once more.
    */
-  K.update = async ({ background = false } = {}) => {
+  K.update = async ({ background = false, retry = false } = {}) => {
     const url = S.settings().updateUrl;
     if (!url) return null;
     if (background && Date.now() - (S.update().checked || 0) < 12 * 3600000) return null;
-    const r = await host.call('updatePack', { url });
+    const r = await host.call(retry ? 'retryPack' : 'updatePack', { url });
+    if (!r.ok && retry && /does not know/.test(r.error || '')) return { ok: false, message: 'Retry update needs a newer engine than the one on this phone.' };
     if (!r.ok) return { ok: false, message: "Couldn't read the update server: " + (r.error || 'no answer') };
     const engine = r.engine && r.engine.versionCode > host.info.shellCode ? r.engine : null;
     S.setUpdate({ checked: Date.now(), status: r.status, name: r.name || '', notes: r.notes || '', engine });
